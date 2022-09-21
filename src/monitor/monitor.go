@@ -29,42 +29,84 @@ var monList list
 /*******************************/
 
 // delete failed or leaved node from local list
-func delete(targetIp string) {
+func delete(targetIp string) bool {
 	// idx is the index of deleted peer
-	var idx int
+	var idx int = -1
 	for i, ip := range memList.members {
 		if strings.Compare(ip, targetIp) == 0 {
 			idx = i
 			break
 		}
 	}
+	if idx == -1 {
+		// do not need to send message now
+		return false
+	}
 	memList.members = append(memList.members[:idx], memList.members[idx+1:]...)
+	return true
 }
 
 // based on current member list, update the monitor list
-func updateMonList() {
-	monList.mu.Lock()
-	defer monList.mu.Unlock()
+func updateMonList() bool {
 	// idx is the index of current node
-	var idx int
+	var idx int = -1
 	for i, ip := range memList.members {
 		if strings.Compare(ip, localIp) == 0 {
 			idx = i
 			break
 		}
 	}
+	// if we do not have at least 3 other members
+	if len(memList.members) <= 3 {
+		monList.members = append(memList.members[:idx], memList.members[idx+1:]...)
+		return true
+	}
 	var newList []string
 	for i := 0; i < 3; i++ {
 		newList = append(newList, memList.members[(idx+i)%len(memList.members)])
 	}
 	monList.members = newList
+	return true
 }
 
-func handleFailOrLeave(ip string) {
+func handleFailOrLeave(ip string) bool {
 	memList.mu.Lock()
+	monList.mu.Lock()
 	defer memList.mu.Unlock()
-	delete(ip)
-	updateMonList()
+	defer monList.mu.Unlock()
+	if strings.Compare(ip, localIp) == 0 {
+		// need to join again!!!
+		// go join again
+		return false
+	}
+	if delete(ip) && updateMonList() {
+		return true
+	}
+	return false
+}
+
+func handleFailOrLeaveMsg(m utils.Message) {
+	if handleFailOrLeave(m.Payload) {
+		memList.mu.Lock()
+		monList.mu.Lock()
+		failMsg := utils.Msg2Json(utils.CreateMsg(localIp, utils.FAIL, m.Payload))
+		// send fail message to others
+		for _, dstIp := range monList.members {
+			dstAddr := &net.UDPAddr{IP: net.ParseIP(dstIp), Port: port}
+			// build connection
+			conn, err := net.DialUDP("udp", nil, dstAddr)
+			if err != nil {
+				log.Fatal("Something wrong when build udp conn with ", m.Payload)
+			}
+			// send message
+			_, err = conn.Write(failMsg)
+			if err != nil {
+				log.Fatal("Something wrong when send udp packet to", m.Payload)
+			}
+		}
+		memList.mu.Unlock()
+		monList.mu.Unlock()
+	}
 }
 
 // start to monitor
@@ -105,13 +147,33 @@ func monitor(ip string) {
 
 			// try to get ack message from target
 			n, err := conn.Read(rcvMsg)
-			receive := utils.Json2Msg(rcvMsg[:n])
-			fmt.Println(receive)
+			_ = utils.Json2Msg(rcvMsg[:n])
+			// fmt.Println(receive)
 			if err != nil {
-				fmt.Println(err)
 				// monitor object failed
 				ticker.Stop()
 				flag = false
+				if handleFailOrLeave(ip) {
+					memList.mu.Lock()
+					monList.mu.Lock()
+					failMsg := utils.Msg2Json(utils.CreateMsg(localIp, utils.FAIL, ip))
+					// send fail message to others
+					for _, dstIp := range monList.members {
+						dstAddr := &net.UDPAddr{IP: net.ParseIP(dstIp), Port: port}
+						// build connection
+						conn, err := net.DialUDP("udp", nil, dstAddr)
+						if err != nil {
+							log.Fatal("Something wrong when build udp conn with ", ip)
+						}
+						// send message
+						_, err = conn.Write(failMsg)
+						if err != nil {
+							log.Fatal("Something wrong when send udp packet to", ip)
+						}
+					}
+					memList.mu.Unlock()
+					monList.mu.Unlock()
+				}
 			}
 
 			// monitor object is still alive
@@ -161,10 +223,10 @@ func handler() {
 			}
 		// delete fail node from local when receive fail message
 		case utils.FAIL:
-			go handleFailOrLeave(msg.SrcIp)
+			go handleFailOrLeaveMsg(msg)
 		// delete leave node from local when receive leave message
 		case utils.LEAVE:
-			go handleFailOrLeave(msg.SrcIp)
+			go handleFailOrLeaveMsg(msg)
 		}
 	}
 }

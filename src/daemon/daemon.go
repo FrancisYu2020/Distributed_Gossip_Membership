@@ -31,8 +31,8 @@ var port = 9980
 var memList list
 var monList list
 var operaChan = make(chan string, 1024)
+var stopChan = make(chan struct{})
 var responChan = make(chan list, 1024)
-var killChan = make(chan string, 1024)
 var listChan = make(chan list, 1024)
 
 /*******************************/
@@ -43,8 +43,6 @@ func del(target string) {
 	// fmt.Println("Cur members:", memList.members)
 	// fmt.Println("kill member:", target)
 	// kill cur monitors
-	operaChan <- "KILL"
-
 	if strings.Compare(target, localID) == 0 {
 		// do not delete self
 		return
@@ -58,7 +56,6 @@ func del(target string) {
 	}
 	if idx == -1 {
 		// do not need to send message now
-		operaChan <- "RESTART"
 		// fmt.Println("After members:", memList.members)
 		// fmt.Println("------------------")
 		return
@@ -85,7 +82,6 @@ func del(target string) {
 		newList = append(newList, memList.members[(idx-1)%len(memList.members)])
 		monList.members = newList
 	}
-	operaChan <- "RESTART"
 	// fmt.Println("After members:", memList.members)
 	// fmt.Println("------------------")
 	return
@@ -116,12 +112,17 @@ func operationsBank() {
 			responChan <- monList
 		} else if strings.Compare(operation[:4], "READ") == 0 {
 			listChan <- memList
-		} else if strings.Compare(operation[:4], "KILL") == 0 {
-			for i := 0; i < len(monList.members); i++ {
-				killChan <- "KILL"
-			}
+			// } else if strings.Compare(operation[:4], "KILL") == 0 {
+			// 	for i := 0; i < len(monList.members)-1; i++ {
+			// 		killChan <- "KILL"
+			// 	}
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
-			startMonitor()
+			// fmt.Println("OK, CLOSE ALL")
+			close(stopChan)
+			time.Sleep(10 * time.Millisecond)
+			// fmt.Println("OK NOW RESTART")
+			stopChan = make(chan struct{})
+			startMonitor(stopChan)
 		}
 	}
 }
@@ -149,85 +150,81 @@ func handleFailOrLeaveMsg(m utils.Message) {
 }
 
 // start to monitor
-func startMonitor() {
+func startMonitor(stopChan <-chan struct{}) {
+	// fmt.Println("Try to start all monitors!")
 	for _, mon := range monList.members {
-		go monitor(mon)
+		go func(mon member) {
+			// fmt.Println("Start Monitor", mon.id)
+			var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
+			msg := utils.Msg2Json(pingMsg)
+			var rcvMsg = make([]byte, 1024)
+			// set a ticker to send ping message periodically
+			ticker := time.NewTicker(2500 * time.Millisecond)
+			for {
+				select {
+				case <-ticker.C:
+					// dstAddr := &net.UDPAddr{IP: net.ParseIP(mon.ip), Port: port}
+					// // build connection
+					// fmt.Println(dstAddr)
+					conn, err := net.Dial("udp", mon.ip+":"+strconv.Itoa(port))
+					if err != nil {
+						log.Fatal("Something wrong when build udp conn with ", mon.id)
+					}
+					// send message
+					_, err = conn.Write(msg)
+					// fmt.Println("Ping:", mon.id, pingMsg)
+					if err != nil {
+						log.Fatal("Something wrong when send udp packet to", mon.id)
+					}
+					// set read deadline for timeout
+					conn.SetReadDeadline(time.Now().Add(time.Duration(2000) * time.Millisecond))
+
+					// try to get ack message from target
+					_, err = conn.Read(rcvMsg)
+					// _ = utils.Json2Msg(rcvMsg[:n])
+					if err != nil {
+						// fmt.Println("Dead!", mon.id)
+						// monitor object failed
+						ticker.Stop()
+						// delete the failed node
+						operaChan <- "MON"
+						failMsg := utils.Msg2Json(utils.CreateMsg(localIp, localID, utils.FAIL, mon.id))
+						// get the monitor list
+						curMon := <-responChan
+						// send fail message to others
+						for _, m := range curMon.members {
+							if strings.Compare(m.id, mon.id) == 0 {
+								continue
+							}
+							dstAddr := &net.UDPAddr{IP: net.ParseIP(m.ip), Port: port}
+							// build connection
+							conn, err := net.DialUDP("udp", nil, dstAddr)
+							if err != nil {
+								log.Fatal("Something wrong when build udp conn with " + m.id)
+							}
+							// send message
+							_, err = conn.Write(failMsg)
+							if err != nil {
+								log.Fatal("Something wrong when send udp packet to" + m.id)
+							}
+						}
+						operaChan <- "DEL" + mon.id
+						operaChan <- "RESTART"
+					}
+					// monitor object is still alive
+					// fmt.Println("target is still alive", mon.id)
+					// close the connection
+					conn.Close()
+				case <-stopChan:
+					// fmt.Println("Break ", mon.id)
+					return
+				}
+			}
+		}(mon)
 	}
 }
 
 // ping all peers in monitor list every 2.5 seconds
-func monitor(mon member) {
-	fmt.Println("Start Monitor", mon.id)
-	var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
-	msg := utils.Msg2Json(pingMsg)
-	var rcvMsg = make([]byte, 1024)
-	// set a ticker to send ping message periodically
-	ticker := time.NewTicker(2500 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		flag := true
-		select {
-		case <-ticker.C:
-			// dstAddr := &net.UDPAddr{IP: net.ParseIP(mon.ip), Port: port}
-			// // build connection
-			// fmt.Println(dstAddr)
-			conn, err := net.Dial("udp", mon.ip+":"+strconv.Itoa(port))
-			if err != nil {
-				log.Fatal("Something wrong when build udp conn with ", mon.id)
-			}
-			// send message
-			_, err = conn.Write(msg)
-			fmt.Println("Ping:", mon.id, pingMsg)
-			if err != nil {
-				log.Fatal("Something wrong when send udp packet to", mon.id)
-			}
-			// set read deadline for timeout
-			conn.SetReadDeadline(time.Now().Add(time.Duration(2000) * time.Millisecond))
-
-			// try to get ack message from target
-			_, err = conn.Read(rcvMsg)
-			// _ = utils.Json2Msg(rcvMsg[:n])
-			if err != nil {
-				fmt.Println("Dead!", mon.id)
-				// monitor object failed
-				ticker.Stop()
-				// flag = false
-				// delete the failed node
-				operaChan <- "DEL" + mon.id
-				failMsg := utils.Msg2Json(utils.CreateMsg(localIp, localID, utils.FAIL, mon.id))
-				// get the monitor list
-				operaChan <- "MON"
-
-				curMon := <-responChan
-				// send fail message to others
-				for _, mon := range curMon.members {
-					dstAddr := &net.UDPAddr{IP: net.ParseIP(mon.ip), Port: port}
-					// build connection
-					conn, err := net.DialUDP("udp", nil, dstAddr)
-					if err != nil {
-						log.Fatal("Something wrong when build udp conn with " + mon.id)
-					}
-					// send message
-					_, err = conn.Write(failMsg)
-					if err != nil {
-						log.Fatal("Something wrong when send udp packet to" + mon.id)
-					}
-				}
-			}
-			// monitor object is still alive
-			// fmt.Println("target is still alive", mon.id)
-			// close the connection
-			conn.Close()
-		case <-killChan:
-			flag = false
-		}
-		// if monitor peer failed, break the loop
-		if !flag {
-			// fmt.Println("Break")
-			break
-		}
-	}
-}
 
 // listen to specific port: 9980 to reply for ping
 func handler() {
@@ -299,13 +296,13 @@ func commandServer() {
 }
 
 func main() {
-	memList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2203.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test7"}, {"fa22-cs425-2205.cs.illinois.edu", "test4"}, {localIp, localID}}
+	memList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2203.cs.illinois.edu", "test7"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}, {localIp, localID}}
 	// memList.members = []member{{localIp, localID}}
-	monList.members = []member{{"fa22-cs425-2205.cs.illinois.edu", "test4"}, {"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2203.cs.illinois.edu", "test6"}}
+	monList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}
 	// monList.members = []member{{localIp, localID}}
 	fmt.Println(monList.members)
 	go operationsBank()
-	go startMonitor()
+	go startMonitor(stopChan)
 	go handler()
 	go commandServer()
 	for {

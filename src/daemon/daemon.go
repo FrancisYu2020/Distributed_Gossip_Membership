@@ -79,15 +79,27 @@ func del(target string) {
 		monList.members = append(monList.members, memList.members[idx+1:]...)
 	} else {
 		var newList []member
-		for i := 1; i <= 3; i++ {
+		for i := 1; i <= 2; i++ {
 			newList = append(newList, memList.members[(idx+i)%len(memList.members)])
 		}
+		newList = append(newList, memList.members[(idx-1)%len(memList.members)])
 		monList.members = newList
 	}
 	operaChan <- "RESTART"
 	// fmt.Println("After members:", memList.members)
 	// fmt.Println("------------------")
 	return
+}
+
+func checkExit(target string) bool {
+	operaChan <- "READ"
+	curMem := <-listChan
+	for _, m := range curMem.members {
+		if strings.Compare(m.id, target) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // handle operations
@@ -145,6 +157,7 @@ func startMonitor() {
 
 // ping all peers in monitor list every 2.5 seconds
 func monitor(mon member) {
+	fmt.Println("Start Monitor", mon.id)
 	var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
 	msg := utils.Msg2Json(pingMsg)
 	var rcvMsg = make([]byte, 1024)
@@ -155,14 +168,16 @@ func monitor(mon member) {
 		flag := true
 		select {
 		case <-ticker.C:
-			dstAddr := &net.UDPAddr{IP: net.ParseIP(mon.ip), Port: port}
-			// build connection
-			conn, err := net.DialUDP("udp", nil, dstAddr)
+			// dstAddr := &net.UDPAddr{IP: net.ParseIP(mon.ip), Port: port}
+			// // build connection
+			// fmt.Println(dstAddr)
+			conn, err := net.Dial("udp", mon.ip+":"+strconv.Itoa(port))
 			if err != nil {
 				log.Fatal("Something wrong when build udp conn with ", mon.id)
 			}
 			// send message
 			_, err = conn.Write(msg)
+			fmt.Println("Ping:", mon.id, pingMsg)
 			if err != nil {
 				log.Fatal("Something wrong when send udp packet to", mon.id)
 			}
@@ -170,10 +185,10 @@ func monitor(mon member) {
 			conn.SetReadDeadline(time.Now().Add(time.Duration(2000) * time.Millisecond))
 
 			// try to get ack message from target
-			n, err := conn.Read(rcvMsg)
-			_ = utils.Json2Msg(rcvMsg[:n])
-			// fmt.Println(receive)
+			_, err = conn.Read(rcvMsg)
+			// _ = utils.Json2Msg(rcvMsg[:n])
 			if err != nil {
+				fmt.Println("Dead!", mon.id)
 				// monitor object failed
 				ticker.Stop()
 				// flag = false
@@ -233,7 +248,7 @@ func handler() {
 			fmt.Println("Error when read udp packet")
 		}
 		msg := utils.Json2Msg(rcvMsg[:n])
-		// fmt.Println(msg)
+		// fmt.Println("Received:", msg)
 		// handle different types of messages
 		switch msg.Type {
 		// reply ack message when receive ping message
@@ -245,7 +260,9 @@ func handler() {
 			}
 		// delete fail node from local when receive fail message
 		case utils.FAIL:
-			go handleFailOrLeaveMsg(msg)
+			if checkExit(msg.Payload) {
+				go handleFailOrLeaveMsg(msg)
+			}
 		// delete leave node from local when receive leave message
 		case utils.LEAVE:
 			go handleFailOrLeaveMsg(msg)
@@ -282,9 +299,9 @@ func commandServer() {
 }
 
 func main() {
-	memList.members = []member{{"192.16.2.1", "test5"}, {"192.16.2.1", "test6"}, {"192.16.2.1", "test7"}, {"192.16.2.1", "test4"}, {localIp, localID}, {"192.16.2.1", "test1"}, {"192.16.2.1", "test2"}, {"192.16.2.1", "test3"}}
+	memList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2203.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test7"}, {"fa22-cs425-2205.cs.illinois.edu", "test4"}, {localIp, localID}}
 	// memList.members = []member{{localIp, localID}}
-	monList.members = []member{{"192.16.2.1", "test1"}, {"192.16.2.1", "test2"}, {"192.16.2.1", "test3"}}
+	monList.members = []member{{"fa22-cs425-2205.cs.illinois.edu", "test4"}, {"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2203.cs.illinois.edu", "test6"}}
 	// monList.members = []member{{localIp, localID}}
 	fmt.Println(monList.members)
 	go operationsBank()

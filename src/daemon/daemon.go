@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"mp2-hangy6-tian23/src/utils"
 	"net"
 	"os"
+	"src/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -296,6 +296,9 @@ func commandServer() {
 }
 
 func main() {
+	utils.StartIntroducer("hello")
+	fmt.Println(localID)
+	fmt.Println(localIp)
 	memList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2203.cs.illinois.edu", "test7"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}, {localIp, localID}}
 	// memList.members = []member{{localIp, localID}}
 	monList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}

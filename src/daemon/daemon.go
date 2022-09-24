@@ -37,6 +37,27 @@ var listChan = make(chan list, 1024)
 
 /*******************************/
 
+func update() {
+	idx := -1
+	for i, m := range memList.members {
+		if strings.Compare(m.id, localID) == 0 {
+			idx = i
+			break
+		}
+	}
+	monList.members = []member{}
+	// if we do not have at least 4 other members
+	if len(memList.members) <= 4 {
+		monList.members = append(monList.members, memList.members[:idx]...)
+		monList.members = append(monList.members, memList.members[idx+1:]...)
+	} else { // mointor following 4 members
+		var newList []member
+		for i := 1; i <= 4; i++ {
+			newList = append(newList, memList.members[(idx+i)%len(memList.members)])
+		}
+	}
+}
+
 // delete failed or leaved node from local list
 func del(target string) {
 	// fmt.Println("------------------")
@@ -62,26 +83,7 @@ func del(target string) {
 	}
 	memList.members = append(memList.members[:idx], memList.members[idx+1:]...)
 
-	idx = -1
-	for i, m := range memList.members {
-		if strings.Compare(m.id, localID) == 0 {
-			idx = i
-			break
-		}
-	}
-	monList.members = []member{}
-	// if we do not have at least 3 other members
-	if len(memList.members) <= 3 {
-		monList.members = append(monList.members, memList.members[:idx]...)
-		monList.members = append(monList.members, memList.members[idx+1:]...)
-	} else {
-		var newList []member
-		for i := 1; i <= 2; i++ {
-			newList = append(newList, memList.members[(idx+i)%len(memList.members)])
-		}
-		newList = append(newList, memList.members[(idx-1)%len(memList.members)])
-		monList.members = newList
-	}
+	update()
 	// fmt.Println("After members:", memList.members)
 	// fmt.Println("------------------")
 	return

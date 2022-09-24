@@ -28,6 +28,7 @@ type list struct {
 var localIp = utils.GetLocalIP()
 var localID = utils.GenerateID(localIp)
 var port = 9980
+var portTCP = 9981
 var memList list
 var monList list
 var operaChan = make(chan string, 1024)
@@ -282,9 +283,13 @@ func commandServer() {
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
 		} else if strings.Compare(command, "join") == 0 {
-			// join
+			if err := JoinRequest(portTCP); err != nil {
+				log.Fatal("Error in joining new node: ", err)
+			}
 		} else if strings.Compare(command, "leave") == 0 {
-			// leave
+			if err := LeaveRequest(); err != nil {
+				log.Fatal("Error in joining new node: ", err)
+			}
 		} else if strings.Compare(command, "list_mon") == 0 {
 			operaChan <- "MON"
 			curMon := <-responChan
@@ -297,8 +302,9 @@ func commandServer() {
 
 func main() {
 	// start the introducer if the indicator file is found
-	if utils.IsIntroducer("/home/hangy6/introducer") || utils.IsIntroducer("/home/tian23/introducer") {
+	if IsIntroducer("/home/hangy6/introducer") || IsIntroducer("/home/tian23/introducer") {
 		fmt.Println("----------------I am a noble introducer ^_^----------------")
+		StartIntroducer()
 	} else {
 		fmt.Println("----------------I am a pariah node :(----------------")
 	}

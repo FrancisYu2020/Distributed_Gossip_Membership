@@ -21,12 +21,6 @@ func NodeJoin() error {
 		log.Println(msg)
 	}
 	var buffer []byte
-	log.Println(memList, "---------------first join node (introducer)")
-	if jsonData, err := json.Marshal(memList); err != nil {
-		return err
-	} else {
-		buffer = append(buffer, jsonData...)
-	}
 	if err := client.Call("Listener.JoinNotification", msg, &buffer); err != nil {
 		log.Fatal("Error in notifying the introducer: ", err)
 	}
@@ -84,10 +78,16 @@ func UpdateRequest(client *rpc.Client) {
 	// The new node use this function to ask the introducer to send tcp messages to other members
 	// so that the other members could update their membership and monitor lists accordingly.
 	var buffer []byte
-	if err := client.Call("Listener.UpdateMemList", "Please let other members know me!", &buffer); err != nil {
+	log.Println(memList, "---------------first join node (introducer)")
+	if jsonData, err := json.Marshal(memList); err != nil {
+		log.Fatal("UpdateRequest: json Marshal failed: ", err)
+	} else {
+		buffer = append(buffer, jsonData...)
+	}
+	if err := client.Call("Listener.UpdateMemList", "introducer", &buffer); err != nil {
 		log.Fatal("Error in other members updating memList: ", err)
 	}
-	if err := client.Call("Listener.UpdateMonList", "Please let other members update their monitor lists", &buffer); err != nil {
+	if err := client.Call("Listener.UpdateMonList", "introducer", &buffer); err != nil {
 		log.Fatal("Error in other members updating monList: ", err)
 	}
 }

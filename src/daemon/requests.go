@@ -78,13 +78,15 @@ func UpdateRequest(client *rpc.Client) {
 	// The new node use this function to ask the introducer to send tcp messages to other members
 	// so that the other members could update their membership and monitor lists accordingly.
 	var buffer []byte
-	log.Println(memList, "---------------first join node (introducer)")
-	if jsonData, err := json.Marshal(memList); err != nil {
-		log.Fatal("UpdateRequest: json Marshal failed: ", err)
-	} else {
-		buffer = append(buffer, jsonData...)
-	}
-	reply := "introducer"
+	// log.Println(memList, "---------------first join node (introducer)")
+	// if jsonData, err := json.Marshal(memList); err != nil {
+	// 	log.Fatal("UpdateRequest: json Marshal failed: ", err)
+	// } else {
+	// 	buffer = append(buffer, jsonData...)
+	// }
+	var reply []byte
+	reply = []byte("introducer")
+	buffer = []byte("introducer")
 	if err := client.Call("Listener.UpdateMemList", buffer, &reply); err != nil {
 		log.Fatal("Error in other members updating memList: ", err)
 	}

@@ -79,11 +79,13 @@ func Max(a int, b int) int {
 	return b
 }
 
-func (l *Listener) UpdateMemList(buffer []byte, msg *string) error {
+func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the monitor list accordingly
 	//TODO: finish this function
-	if *msg == "introducer" {
+	log.Println(string(buffer), "fuckkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+	if string(buffer) == "introducer" {
+		log.Println("I am the introducer!")
 		for _, m := range memList.Members[:Max(1, len(memList.Members)-1)] {
 			log.Println("Dial address is ", m.IP+":"+strconv.Itoa(portTCP))
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
@@ -98,7 +100,7 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *string) error {
 			} else {
 				buffer1 = append(buffer1, jsonData...)
 			}
-			reply := "node"
+			var reply []byte
 			if err := client.Call("Listener.UpdateMemList", buffer1, &reply); err != nil {
 				fmt.Println("Hello")
 				log.Fatal("Introducer: Error in updating membership lists: ", err)

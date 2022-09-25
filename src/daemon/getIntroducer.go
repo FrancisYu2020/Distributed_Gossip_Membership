@@ -153,7 +153,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 			monList.Members = append(monList.Members, curMem.Members[:idx]...)
 			monList.Members = append(monList.Members, curMem.Members[idx+1:]...)
 		} else {
-			for i := 1; i < 4; i++ {
+			for i := 1; i < 5; i++ {
 				monList.Members = append(monList.Members, curMem.Members[(idx+i)%len(curMem.Members)])
 			}
 		}

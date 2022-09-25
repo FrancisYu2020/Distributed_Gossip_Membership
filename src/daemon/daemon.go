@@ -42,7 +42,8 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 func update() {
 	idx := -1
 	for i, m := range memList.Members {
-		if strings.Compare(m.ID, localID) == 0 {
+		fmt.Println(m.IP, localIp)
+		if strings.Compare(m.IP, localIp) == 0 {
 			idx = i
 			break
 		}

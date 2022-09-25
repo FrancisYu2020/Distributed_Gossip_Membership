@@ -105,7 +105,7 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
 			}
 		}
 	} else {
-		log.Println("Hello, I am currently in node ", utils.GetLocalIP())
+		// log.Println("Hello, I am currently in node ", utils.GetLocalIP())
 		if err := json.Unmarshal(buffer, &memList); err != nil {
 			log.Fatal("Node: Error in updating membership list: ", err)
 		}
@@ -119,6 +119,11 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 	// know the existence of the new node and update the membership list accordingly
 	// TODO: finish this function
 	if string(buffer) == "introducer" {
+		if len(memList.Members) < 6 {
+			monList.Members = memList.Members[1:]
+		} else {
+			monList.Members = memList.Members[1:6]
+		}
 		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {

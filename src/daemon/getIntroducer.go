@@ -125,6 +125,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 		} else {
 			monList.Members = memList.Members[1:5]
 		}
+		log.Println(memList.Members)
 		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
@@ -167,7 +168,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 func (l *Listener) HandleLeaveRequest(msg string, ack *[]byte) error {
 	// a new node is joining the ring
 	log.Println("Deleting", msg, "...")
-	del(string(msg))
+	DelLeave(string(msg))
 	return nil
 }
 

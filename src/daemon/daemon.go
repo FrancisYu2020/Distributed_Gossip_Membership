@@ -79,7 +79,7 @@ func del(target string) {
 		return
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
-	log.Println(memList.Members)
+	// log.Println(memList.Members)
 	update()
 	return
 }

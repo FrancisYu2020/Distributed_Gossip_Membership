@@ -125,7 +125,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 		} else {
 			monList.Members = memList.Members[1:5]
 		}
-		log.Println(memList.Members)
+		// log.Println(memList.Members)
 		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {

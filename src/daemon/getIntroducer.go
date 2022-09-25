@@ -43,7 +43,7 @@ func (l *Listener) HandleJoinRequest(msg []byte, ack *bool) error {
 	curMem := <-listChan
 	for _, m0 := range curMem.Members {
 		if m0.IP == m.IP {
-			log.Println("Received join request from Member who are already in the ring!")
+			log.Println("Warning: Received join request from Member who are already in the ring!")
 			return nil
 		}
 	}
@@ -65,12 +65,94 @@ func (l *Listener) HandleRetrieveInfo(msg string, buffer *[]byte) error {
 	return nil
 }
 
+func (l *Listener) JoinNotification(msg string, buffer *[]byte) error {
+	// The introducer getting the success message from the node and print the join message
+	log.Println(msg)
+	return nil
+}
+
+func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
+	// the introducer will be asked by the new node to let other nodes
+	// know the existence of the new node and update the monitor list accordingly
+	//TODO: finish this function
+	if msg == "introducer" {
+		for _, m := range memList[1:] {
+			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
+			if err != nil {
+				log.Fatal(err)
+			}
+			*buffer = nil
+			operaChan <- "READ"
+			curMem := <-listChan
+			if jsonData, err := json.Marshal(curMem); err != nil {
+				return err
+			} else {
+				*buffer = append(*buffer, jsonData...)
+			}
+			fmt.Println(string(buffer), "----------------------------------------")
+			if err := client.Call("Listener.UpdateMemList", "node", &buffer); err != nil {
+				log.Fatal("Error in updating monitor lists: ", err)
+				return err
+			}
+		}
+	} else {
+		if err := json.Unmarshal(*buffer, &memList); err != nil {
+			log.Fatal("Error in retrieving membership list and monitor list: ", err)
+		}
+	}
+
+	return nil
+}
+
+func (l *Listener) UpdateMonList(msg string, buffer *[]byte) error {
+	// the introducer will be asked by the new node to let other nodes
+	// know the existence of the new node and update the membership list accordingly
+	// TODO: finish this function
+	if msg == "introducer" {
+		for _, m := range memList[1:] {
+			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := client.Call("Listener.UpdateMonList", "node", &buffer); err != nil {
+				log.Fatal("Error in updating monitor lists: ", err)
+				return err
+			}
+		}
+	} else {
+		operaChan <- "READ"
+		curMem := <-listChan
+		idx := -1
+		for i, m := range curMem.Members {
+			if m.IP == GetLocalIP() {
+				idx = i
+				break
+			}
+		}
+		if idx == -1 {
+			log.Fatal("In UpdateMonList: Something went wrong in the membership lists")
+		}
+		monList.Members = nil
+		if len(curMem.Members) < 6 {
+			monList.Members = append(monList.Members, curMem.Members[:idx]...)
+			monList.Members = append(monList.Members, curMem.Members[idx+1:]...)
+		} else {
+			for i := 1; i < 4; i++ {
+				monList.Members = append(monList.Members, curMem.Members[(idx+i)%len(curMem.Members)])
+			}
+		}
+	}
+	return nil
+}
+
 func (l *Listener) HandleLeaveRequest() error {
 	// an existing node is leaving the ring
+	// TODO: finish this function
 	return nil
 }
 
 func Leave(target string) {
+	// TODO: finish this function
 	// kill cur monitors
 	// if strings.Compare(target, localID) == 0 {
 	// 	// do not delete self
@@ -136,5 +218,10 @@ func IntroducerWorker() {
 func StartIntroducer() {
 	// in main function, if the introducer indicator file is not found, this function will be skipped
 	// which means it is a common node, otherwise it will start a goroutine for tcp listener.
+	go IntroducerWorker()
+}
+
+func StartTCPServer() {
+	// function for starting TCP server, although same as IntroducerWorker
 	go IntroducerWorker()
 }

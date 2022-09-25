@@ -15,6 +15,16 @@ func NodeJoin() error {
 	}
 	JoinRequest(client)
 	RetrieveInfo(client)
+	// next we show join success message on both introducer and current node
+	msg := utils.GetLocalIP() + " successfully joined the ring!"
+	log.Println(msg)
+	if err := client.Call("Listener.JoinNotification", msg, &reply); err != nil {
+		log.Fatal("Error in notifying the introducer: ", err)
+	}
+
+	// ask the introducer to let other nodes update the membership and monitor lists
+	UpdateRequest(client)
+	log.Println("Other nodes updated successfully!")
 	return nil
 }
 
@@ -38,7 +48,7 @@ func RetrieveInfo(client *rpc.Client) {
 	if err := client.Call("Listener.HandleRetrieveInfo", clientIP, &reply); err != nil {
 		log.Fatal("Error in retrieving membership list and monitor list: ", err)
 	}
-	fmt.Println(reply)
+	// fmt.Println(reply)
 	// lists := bytes.Split(reply, []byte("\r\n\r\n"))
 	if err := json.Unmarshal(reply, &memList); err != nil {
 		log.Fatal("Error in retrieving membership list and monitor list: ", err)
@@ -59,6 +69,18 @@ func RetrieveInfo(client *rpc.Client) {
 		monList.Members = memList.Members[:4]
 	}
 	fmt.Println(memList.Members, monList.Members)
+}
+
+func UpdateRequest(client *rpc.Client) {
+	// The new node use this function to ask the introducer to send tcp messages to other members
+	// so that the other members could update their membership and monitor lists accordingly.
+	var buffer []byte
+	if err := client.Call("Listener.UpdateMemList", "Please let other members know me!", &buffer); err != nil {
+		log.Fatal("Error in other members updating memList: ", err)
+	}
+	if err := client.Call("Listener.UpdateMonList", "Please let other members update their monitor lists", &buffer); err != nil {
+		log.Fatal("Error in other members updating monList: ", err)
+	}
 }
 
 func LeaveRequest() error {

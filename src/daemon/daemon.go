@@ -84,30 +84,7 @@ func del(target string) {
 		return
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
-
 	update()
-	// idx = -1
-	// for i, m := range memList.Members {
-	// 	if strings.Compare(m.ID, localID) == 0 {
-	// 		idx = i
-	// 		break
-	// 	}
-	// }
-	// monList.Members = []Member{}
-	// // if we do not have at least 3 other Members
-	// if len(memList.Members) <= 3 {
-	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
-	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
-	// } else {
-	// 	var newList []Member
-	// 	for i := 1; i <= 2; i++ {
-	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
-	// 	}
-	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
-	// 	monList.Members = newList
-	// }
-	// fmt.Println("After Members:", memList.Members)
-	// fmt.Println("------------------")
 	return
 }
 
@@ -137,10 +114,6 @@ func operationsBank() {
 			responChan <- monList
 		} else if strings.Compare(operation[:4], "READ") == 0 {
 			listChan <- memList
-			// } else if strings.Compare(operation[:4], "KILL") == 0 {
-			// 	for i := 0; i < len(monList.Members)-1; i++ {
-			// 		killChan <- "KILL"
-			// 	}
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
 			// fmt.Println("OK, CLOSE ALL")
 			close(stopChan)
@@ -331,6 +304,7 @@ func main() {
 		StartIntroducer()
 	} else {
 		fmt.Println("----------------I am a pariah node :(----------------")
+		StartTCPServer()
 	}
 
 	// fmt.Println(localID)
@@ -340,9 +314,6 @@ func main() {
 	// monList.Members = []Member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}
 	// monList.Members = []Member{{localIp, localID}}
 	go operationsBank()
-	operaChan <- "ADD"
-	localIP := utils.GetLocalIP()
-	bufferChan <- Member{localIP, utils.GenerateID(localIP)}
 	go startMonitor(stopChan)
 	go handler()
 	go commandServer()

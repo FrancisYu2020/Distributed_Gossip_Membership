@@ -42,7 +42,6 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 func update() {
 	idx := -1
 	for i, m := range memList.Members {
-		fmt.Println(m.IP, localIp)
 		if strings.Compare(m.IP, localIp) == 0 {
 			idx = i
 			break
@@ -50,7 +49,7 @@ func update() {
 	}
 	monList.Members = []Member{}
 	// if we do not have at least 4 other members
-	if len(memList.Members) <= 4 {
+	if len(memList.Members) <= 2 {
 		monList.Members = append(monList.Members, memList.Members[:idx]...)
 		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
 	} else { // mointor following 4 members

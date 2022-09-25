@@ -89,16 +89,16 @@ func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 			if err != nil {
 				log.Fatal(err)
 			}
-			*buffer = nil
+			var buffer1 []byte
 			operaChan <- "READ"
 			curMem := <-listChan
 			if jsonData, err := json.Marshal(curMem); err != nil {
 				return err
 			} else {
-				*buffer = append(*buffer, jsonData...)
+				buffer1 = append(buffer1, jsonData...)
 			}
-			fmt.Println(string(*buffer), "----------------------------------------")
-			if err := client.Call("Listener.UpdateMemList", "node", buffer); err != nil {
+			fmt.Println(string(buffer1), "----------------------------------------")
+			if err := client.Call("Listener.UpdateMemList", "node", &buffer1); err != nil {
 				fmt.Println("Hello")
 				log.Fatal("Introducer: Error in updating membership lists: ", err)
 				return err

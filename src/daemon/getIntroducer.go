@@ -168,7 +168,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 func (l *Listener) HandleLeaveRequest(msg string, ack *[]byte) error {
 	// a new node is joining the ring
 	log.Println("Deleting", msg, "...")
-	DelLeave(string(msg))
+	DelLeave(msg)
 	return nil
 }
 

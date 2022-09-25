@@ -42,7 +42,7 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 // delete failed or leaved node from local list
 func DelLeave(target string) {
 	// kill cur monitors
-	log.Println("In function del, target/localID", target, "/", localID)
+	log.Println("In function del, target/localIp", target, "/", localIp)
 	if strings.Compare(target, localIp) == 0 {
 		// do not delete self
 		fmt.Println("Hello, meixiangdaoba")

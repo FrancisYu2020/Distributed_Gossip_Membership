@@ -173,7 +173,7 @@ func startMonitor(stopChan <-chan struct{}) {
 					_, err = conn.Read(rcvMsg)
 					// _ = utils.Json2Msg(rcvMsg[:n])
 					if err != nil {
-						// fmt.Println("Dead!", mon.ID)
+						fmt.Println("Dead!", mon.ID)
 						// monitor object failed
 						ticker.Stop()
 						// delete the failed node
@@ -247,7 +247,9 @@ func handler() {
 			}
 		// delete fail node from local when receive fail message
 		case utils.FAIL:
+			fmt.Println("Receive fail message:", msg.Payload)
 			if checkExit(msg.Payload) {
+				fmt.Println("Delete it!")
 				go handleFailOrLeaveMsg(msg)
 			}
 		// delete leave node from local when receive leave message

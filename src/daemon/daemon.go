@@ -54,7 +54,7 @@ func update() {
 		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
 	} else { // mointor following 4 members
 		var newList []Member
-		for i := 1; i <= 4; i++ {
+		for i := 1; i <= 2; i++ {
 			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
 		}
 	}

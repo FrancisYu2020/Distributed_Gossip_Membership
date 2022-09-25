@@ -17,8 +17,17 @@ func NodeJoin() error {
 	RetrieveInfo(client)
 	// next we show join success message on both introducer and current node
 	msg := utils.GetLocalIP() + " successfully joined the ring!"
-	log.Println(msg)
-	if err := client.Call("Listener.JoinNotification", msg, &reply); err != nil {
+	if len(memList.Members) > 1 {
+		log.Println(msg)
+	}
+	var buffer []byte
+	log.Println(memList, "---------------first join node (introducer)")
+	if jsonData, err := json.Marshal(memList); err != nil {
+		return err
+	} else {
+		buffer = append(buffer, jsonData...)
+	}
+	if err := client.Call("Listener.JoinNotification", msg, &buffer); err != nil {
 		log.Fatal("Error in notifying the introducer: ", err)
 	}
 

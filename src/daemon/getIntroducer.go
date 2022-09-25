@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"src/utils"
 	"strconv"
 	"strings"
 )
@@ -76,7 +77,7 @@ func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 	// know the existence of the new node and update the monitor list accordingly
 	//TODO: finish this function
 	if msg == "introducer" {
-		for _, m := range memList[1:] {
+		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
 				log.Fatal(err)
@@ -89,15 +90,17 @@ func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 			} else {
 				*buffer = append(*buffer, jsonData...)
 			}
-			fmt.Println(string(buffer), "----------------------------------------")
+			fmt.Println(string(*buffer), "----------------------------------------")
 			if err := client.Call("Listener.UpdateMemList", "node", &buffer); err != nil {
-				log.Fatal("Error in updating monitor lists: ", err)
+				fmt.Println("Hello")
+				log.Fatal("Introducer: Error in updating membership lists: ", err)
 				return err
 			}
 		}
 	} else {
+		log.Println("Hello, I am currently in node ", utils.GetLocalIP())
 		if err := json.Unmarshal(*buffer, &memList); err != nil {
-			log.Fatal("Error in retrieving membership list and monitor list: ", err)
+			log.Fatal("Node: Error in updating membership list: ", err)
 		}
 	}
 
@@ -109,13 +112,13 @@ func (l *Listener) UpdateMonList(msg string, buffer *[]byte) error {
 	// know the existence of the new node and update the membership list accordingly
 	// TODO: finish this function
 	if msg == "introducer" {
-		for _, m := range memList[1:] {
+		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
 				log.Fatal(err)
 			}
 			if err := client.Call("Listener.UpdateMonList", "node", &buffer); err != nil {
-				log.Fatal("Error in updating monitor lists: ", err)
+				log.Fatal("Introducer: Error in updating monitor lists: ", err)
 				return err
 			}
 		}
@@ -124,7 +127,7 @@ func (l *Listener) UpdateMonList(msg string, buffer *[]byte) error {
 		curMem := <-listChan
 		idx := -1
 		for i, m := range curMem.Members {
-			if m.IP == GetLocalIP() {
+			if m.IP == utils.GetLocalIP() {
 				idx = i
 				break
 			}

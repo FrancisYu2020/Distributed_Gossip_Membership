@@ -51,6 +51,7 @@ func update() {
 	// if we do not have at least 4 other members
 	var newList []Member
 	if len(memList.Members) <= 2 {
+		fmt.Println(memList.Members)
 		newList = append(newList, memList.Members[:idx]...)
 		newList = append(newList, memList.Members[idx+1:]...)
 	} else { // mointor following 4 members

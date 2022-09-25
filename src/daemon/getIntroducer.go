@@ -167,8 +167,21 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 ////
 func (l *Listener) HandleLeaveRequest(msg string, ack *[]byte) error {
 	// a new node is joining the ring
-	log.Println("Deleting", msg, "...")
-	DelLeave(msg)
+	// log.Println("Deleting", msg, "...")
+	var idx int = -1
+	for i, m := range memList.Members {
+		if strings.Compare(m.IP, msg) == 0 {
+			idx = i
+			break
+		}
+	}
+	// log.Println(idx)
+	if idx == -1 {
+		// do not need to send message now
+		return nil
+	}
+	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
+	// log.Println(memList.Members)
 	return nil
 }
 

@@ -79,6 +79,11 @@ func Max(a int, b int) int {
 	return b
 }
 
+func Teaser(msg string, buffer *[]byte) error {
+	fmt.Println("Teaser passed-----------------")
+	return nil
+}
+
 func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the monitor list accordingly
@@ -98,6 +103,11 @@ func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 				buffer1 = append(buffer1, jsonData...)
 			}
 			fmt.Println(string(buffer1), "----------------------------------------")
+			if err := client.Call("Listener.Teaser", "node", &buffer1); err != nil {
+				fmt.Println("Hello")
+				log.Fatal("Introducer: Error in Teaser: ", err)
+				return err
+			}
 			if err := client.Call("Listener.UpdateMemList", "node", &buffer1); err != nil {
 				fmt.Println("Hello")
 				log.Fatal("Introducer: Error in updating membership lists: ", err)

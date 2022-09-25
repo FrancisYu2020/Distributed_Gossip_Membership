@@ -281,11 +281,11 @@ func commandServer() {
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
 		} else if strings.Compare(command, "join") == 0 {
-			if id, err := NodeJoin(); err != nil {
-				localID = id
-				fmt.Println(localID)
+			id, err := NodeJoin()
+			if err != nil {
 				handleError("Error in joining new node: " + err.Error())
 			}
+			localID = id
 			operaChan <- "RESTART"
 		} else if strings.Compare(command, "leave") == 0 {
 			// if err := NodeLeave(); err != nil {

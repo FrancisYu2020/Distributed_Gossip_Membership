@@ -82,7 +82,6 @@ func Max(a int, b int) int {
 func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the monitor list accordingly
-	//TODO: finish this function
 	if string(buffer) == "introducer" {
 		for _, m := range memList.Members[:Max(1, len(memList.Members)-1)] {
 			// log.Println("Dial address is ", m.IP+":"+strconv.Itoa(portTCP))
@@ -117,8 +116,10 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
 func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the membership list accordingly
-	// TODO: finish this function
 	if string(buffer) == "introducer" {
+		if len(memList.Members) == 0 {
+			return nil
+		}
 		if len(memList.Members) < 6 {
 			monList.Members = memList.Members[1:]
 		} else {
@@ -163,14 +164,10 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 
 //// functions for handling leave request
 ////
-func (l *Listener) HandleLeaveRequest(msg []byte, ack *bool) error {
+func (l *Listener) HandleLeaveRequest(msg string, ack *bool) error {
 	// a new node is joining the ring
-	buffer := strings.Split(string(msg), "\r\n\r\n")
-	// m := Member{buffer[0], buffer[1]}
-
-	del(buffer[0])
-	log.Println(memList)
-	log.Println(<-listChan)
+	log.Println("Deleting", msg, "...")
+	del(string(msg))
 	return nil
 }
 
@@ -180,74 +177,25 @@ func (l *Listener) LeftNotification(msg string, buffer *[]byte) error {
 	return nil
 }
 
-// func update() {
-// 	idx := -1
-// 	for i, m := range memList.Members {
-// 		if strings.Compare(m.ID, localID) == 0 {
-// 			idx = i
-// 			break
-// 		}
-// 	}
-// 	monList.Members = []Member{}
-// 	// if we do not have at least 4 other members
-// 	if len(memList.Members) <= 4 {
-// 		monList.Members = append(monList.Members, memList.Members[:idx]...)
-// 		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
-// 	} else { // mointor following 4 members
-// 		var newList []Member
-// 		for i := 1; i <= 4; i++ {
-// 			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
-// 		}
-// 	}
-// }
+func (l *Listener) UpdateMemListLeave(ipToLeave string, msg *[]byte) error {
+	// the introducer will be asked by the new node to let other nodes
+	// know the existence of the new node and update the monitor list accordingly
+	for _, m := range memList.Members {
+		// log.Println("Dial address is ", m.IP+":"+strconv.Itoa(portTCP))
+		client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
+		if err != nil {
+			log.Fatal(err)
+		}
+		var reply []byte
+		if err := client.Call("Listener.HandleLeaveRequest", ipToLeave, &reply); err != nil {
+			log.Fatal("Error in updating membership lists when leaving: ", err)
+			return err
+		}
+	}
+	return nil
+}
 
-// func Leave(target string) {
-// 	// TODO: finish this function
-// 	// kill cur monitors
-// 	// if strings.Compare(target, localID) == 0 {
-// 	// 	// do not delete self
-// 	// 	return
-// 	// }
-// 	// var idx int = -1
-// 	// for i, m := range memList.Members {
-// 	// 	if strings.Compare(m.id, target) == 0 {
-// 	// 		idx = i
-// 	// 		break
-// 	// 	}
-// 	// }
-// 	// if idx == -1 {
-// 	// 	// do not need to send message now
-// 	// 	// fmt.Println("After Members:", memList.Members)
-// 	// 	// fmt.Println("------------------")
-// 	// 	return
-// 	// }
-// 	// memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
-
-// 	// idx = -1
-// 	// for i, m := range memList.Members {
-// 	// 	if strings.Compare(m.id, localID) == 0 {
-// 	// 		idx = i
-// 	// 		break
-// 	// 	}
-// 	// }
-// 	// monList.Members = []Member{}
-// 	// // if we do not have at least 3 other Members
-// 	// if len(memList.Members) <= 3 {
-// 	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
-// 	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
-// 	// } else {
-// 	// 	var newList []Member
-// 	// 	for i := 1; i <= 2; i++ {
-// 	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
-// 	// 	}
-// 	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
-// 	// 	monList.Members = newList
-// 	// }
-// 	// // fmt.Println("After Members:", memList.Members)
-// 	// // fmt.Println("------------------")
-// 	// return
-// }
-
+// Goroutine worker design
 func IntroducerWorker() {
 	// the introducer start the tcp and listen locally
 	tcpAddr, err := net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(portTCP))

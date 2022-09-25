@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"src/utils"
@@ -39,6 +38,11 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 
 /*******************************/
 
+func handleError(err string) {
+	utils.WriteFile("log", err)
+}
+
+// update current monitor list
 func update() {
 	idx := -1
 	for i, m := range memList.Members {
@@ -132,12 +136,12 @@ func handleFailOrLeaveMsg(m utils.Message) {
 		// build connection
 		conn, err := net.DialUDP("udp", nil, dstAddr)
 		if err != nil {
-			log.Fatal("Something wrong when build udp conn with ", mem.ID)
+			handleError("Something wrong when build udp conn with " + mem.ID)
 		}
 		// send message
 		_, err = conn.Write(failMsg)
 		if err != nil {
-			log.Fatal("Something wrong when send udp packet to", mem.ID)
+			handleError("Something wrong when send udp packet to" + mem.ID)
 		}
 	}
 }
@@ -161,13 +165,13 @@ func startMonitor(stopChan <-chan struct{}) {
 					// fmt.Println(dstAddr)
 					conn, err := net.Dial("udp", mon.IP+":"+strconv.Itoa(port))
 					if err != nil {
-						log.Fatal("Something wrong when build udp conn with ", mon.ID)
+						handleError("Something wrong when build udp conn with " + mon.ID)
 					}
 					// send message
 					_, err = conn.Write(msg)
 					// fmt.Println("Ping:", mon.ID, pingMsg)
 					if err != nil {
-						log.Fatal("Something wrong when send udp packet to", mon.ID)
+						handleError("Something wrong when send udp packet to" + mon.ID)
 					}
 					// set read deadline for timeout
 					conn.SetReadDeadline(time.Now().Add(time.Duration(2000) * time.Millisecond))
@@ -193,12 +197,12 @@ func startMonitor(stopChan <-chan struct{}) {
 							// build connection
 							conn, err := net.DialUDP("udp", nil, dstAddr)
 							if err != nil {
-								log.Fatal("Something wrong when build udp conn with " + m.ID)
+								handleError("Something wrong when build udp conn with " + m.ID)
 							}
 							// send message
 							_, err = conn.Write(failMsg)
 							if err != nil {
-								log.Fatal("Something wrong when send udp packet to" + m.ID)
+								handleError("Something wrong when send udp packet to" + m.ID)
 							}
 						}
 						operaChan <- "DEL" + mon.ID
@@ -223,12 +227,12 @@ func startMonitor(stopChan <-chan struct{}) {
 func handler() {
 	udpAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	if err != nil {
-		log.Fatal("Something wrong when resolve local address")
+		handleError("Something wrong when resolve local address")
 	}
 	// build conn
 	conn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		log.Fatal("Something wrong when listen port")
+		handleError("Something wrong when listen port")
 	}
 	defer conn.Close()
 	var rcvMsg = make([]byte, 1024)
@@ -277,15 +281,17 @@ func commandServer() {
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
 		} else if strings.Compare(command, "join") == 0 {
-			if id, err := NodeJoin(); err != nil {
-				localID = id
-				log.Fatal("Error in joining new node: ", err)
+			id, err := NodeJoin()
+			if err != nil {
+				handleError("Error in joining new node: " + err.Error())
 			}
+			localID = id
 			operaChan <- "RESTART"
 		} else if strings.Compare(command, "leave") == 0 {
-			if err := NodeLeave(); err != nil {
-				log.Fatal("Error in joining new node: ", err)
-			}
+			// if err := NodeLeave(); err != nil {
+			// 	handleError("Error in joining new node: " + err.Error())
+			// }
+			handleFailOrLeaveMsg(utils.CreateMsg(localIp, localID, utils.FAIL, localID))
 		} else if strings.Compare(command, "list_mon") == 0 {
 			operaChan <- "MON"
 			curMon := <-responChan

@@ -312,7 +312,7 @@ func main() {
 		StartTCPServer()
 	}
 
-	fmt.Println(localID)
+	// fmt.Println(localID)
 	// fmt.Println(localIp)
 	// memList.Members = []Member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2203.cs.illinois.edu", "test7"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}, {localIp, localID}}
 	// memList.Members = []Member{{localIp, localID}}

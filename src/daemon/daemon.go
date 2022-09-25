@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"src/utils"
@@ -37,6 +38,16 @@ var listChan = make(chan list, 1024)
 var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Members
 
 /*******************************/
+
+var packetLoss = float32(0.03)
+
+func isLoss() bool {
+	r := rand.Float32()
+	if r <= packetLoss {
+		return true
+	}
+	return false
+}
 
 func handleError(err string) {
 	utils.WriteFile("log", err)
@@ -139,9 +150,11 @@ func handleFailOrLeaveMsg(m utils.Message) {
 			handleError("Something wrong when build udp conn with " + mem.ID)
 		}
 		// send message
-		_, err = conn.Write(failMsg)
-		if err != nil {
-			handleError("Something wrong when send udp packet to" + mem.ID)
+		if !isLoss() {
+			_, err = conn.Write(failMsg)
+			if err != nil {
+				handleError("Something wrong when send udp packet to" + mem.ID)
+			}
 		}
 	}
 }
@@ -168,10 +181,12 @@ func startMonitor(stopChan <-chan struct{}) {
 						handleError("Something wrong when build udp conn with " + mon.ID)
 					}
 					// send message
-					_, err = conn.Write(msg)
-					// fmt.Println("Ping:", mon.ID, pingMsg)
-					if err != nil {
-						handleError("Something wrong when send udp packet to" + mon.ID)
+					if !isLoss() {
+						_, err = conn.Write(msg)
+						// fmt.Println("Ping:", mon.ID, pingMsg)
+						if err != nil {
+							handleError("Something wrong when send udp packet to" + mon.ID)
+						}
 					}
 					// set read deadline for timeout
 					conn.SetReadDeadline(time.Now().Add(time.Duration(2000) * time.Millisecond))
@@ -200,9 +215,11 @@ func startMonitor(stopChan <-chan struct{}) {
 								handleError("Something wrong when build udp conn with " + m.ID)
 							}
 							// send message
-							_, err = conn.Write(failMsg)
-							if err != nil {
-								handleError("Something wrong when send udp packet to" + m.ID)
+							if !isLoss() {
+								_, err = conn.Write(failMsg)
+								if err != nil {
+									handleError("Something wrong when send udp packet to" + m.ID)
+								}
 							}
 						}
 						operaChan <- "DEL" + mon.ID
@@ -248,9 +265,11 @@ func handler() {
 		// reply ack message when receive ping message
 		case utils.PING:
 			ackMsg := utils.CreateMsg(localIp, localID, utils.ACK, "")
-			_, err = conn.WriteToUDP(utils.Msg2Json(ackMsg), srcAddr)
-			if err != nil {
-				fmt.Println("Error when send back Ack message")
+			if !isLoss() {
+				_, err = conn.WriteToUDP(utils.Msg2Json(ackMsg), srcAddr)
+				if err != nil {
+					fmt.Println("Error when send back Ack message")
+				}
 			}
 		// delete fail node from local when receive fail message
 		case utils.FAIL:

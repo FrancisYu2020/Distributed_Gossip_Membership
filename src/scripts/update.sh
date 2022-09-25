@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for val in {1..9}
+for val in {6..9}
 do
     echo VM$val Updating
     ssh $1@fa22-cs425-220$val.cs.illinois.edu "cd ./mp2-hangy6-tian23; git pull -f origin $2; exit"

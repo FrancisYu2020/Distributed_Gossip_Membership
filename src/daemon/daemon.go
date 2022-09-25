@@ -141,10 +141,10 @@ func operationsBank() {
 			// 		killChan <- "KILL"
 			// 	}
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
-			// fmt.Println("OK, CLOSE ALL")
+			fmt.Println("OK, CLOSE ALL")
 			close(stopChan)
 			time.Sleep(10 * time.Millisecond)
-			// fmt.Println("OK NOW RESTART")
+			fmt.Println("OK NOW RESTART")
 			stopChan = make(chan struct{})
 			startMonitor(stopChan)
 		}
@@ -210,6 +210,7 @@ func startMonitor(stopChan <-chan struct{}) {
 						fmt.Println("Dead!", mon.ID)
 						// monitor object failed
 						ticker.Stop()
+						fmt.Println("Stop Ticker")
 						// delete the failed node
 						operaChan <- "MON"
 						failMsg := utils.Msg2Json(utils.CreateMsg(localIp, localID, utils.FAIL, mon.ID))
@@ -217,6 +218,7 @@ func startMonitor(stopChan <-chan struct{}) {
 						curMon := <-responChan
 						// send fail message to others
 						for _, m := range curMon.Members {
+							fmt.Println("Start send fail msg")
 							if strings.Compare(m.ID, mon.ID) == 0 {
 								continue
 							}
@@ -232,7 +234,9 @@ func startMonitor(stopChan <-chan struct{}) {
 								log.Fatal("Something wrong when send udp packet to" + m.ID)
 							}
 						}
+						fmt.Println("Deleted", mon.ID)
 						operaChan <- "DEL" + mon.ID
+						fmt.Println("Send restart request")
 						operaChan <- "RESTART"
 					}
 					// monitor object is still alive
@@ -341,8 +345,8 @@ func main() {
 	// monList.Members = []Member{{localIp, localID}}
 	go operationsBank()
 	operaChan <- "ADD"
-	localIP := utils.GetLocalIP()
-	bufferChan <- Member{localIP, utils.GenerateID(localIP)}
+	// localIP := utils.GetLocalIP()
+	// bufferChan <- Member{localIP, utils.GenerateID(localIP)}
 	go startMonitor(stopChan)
 	go handler()
 	go commandServer()

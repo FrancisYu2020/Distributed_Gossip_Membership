@@ -38,6 +38,7 @@ func RetrieveInfo(client *rpc.Client) {
 	if err := client.Call("Listener.HandleRetrieveInfo", clientIP, &reply); err != nil {
 		log.Fatal("Error in retrieving membership list and monitor list: ", err)
 	}
+	fmt.Println(reply)
 	// lists := bytes.Split(reply, []byte("\r\n\r\n"))
 	if err := json.Unmarshal(reply, &memList); err != nil {
 		log.Fatal("Error in retrieving membership list and monitor list: ", err)
@@ -47,7 +48,7 @@ func RetrieveInfo(client *rpc.Client) {
 	// handle the monitor list for the new node
 	if len(memList.Members) < 6 {
 		for _, m := range memList.Members {
-			if m.ip == clientIP {
+			if m.IP == clientIP {
 				continue
 			}
 			monList.Members = append(monList.Members, m)

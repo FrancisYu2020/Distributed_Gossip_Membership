@@ -13,8 +13,8 @@ import (
 )
 
 type Member struct {
-	ip string
-	id string
+	IP string
+	ID string
 }
 
 type list struct {
@@ -51,7 +51,7 @@ func del(target string) {
 	}
 	var idx int = -1
 	for i, m := range memList.Members {
-		if strings.Compare(m.id, target) == 0 {
+		if strings.Compare(m.ID, target) == 0 {
 			idx = i
 			break
 		}
@@ -66,7 +66,7 @@ func del(target string) {
 
 	idx = -1
 	for i, m := range memList.Members {
-		if strings.Compare(m.id, localID) == 0 {
+		if strings.Compare(m.ID, localID) == 0 {
 			idx = i
 			break
 		}
@@ -93,7 +93,7 @@ func checkExit(target string) bool {
 	operaChan <- "READ"
 	curMem := <-listChan
 	for _, m := range curMem.Members {
-		if strings.Compare(m.id, target) == 0 {
+		if strings.Compare(m.ID, target) == 0 {
 			return true
 		}
 	}
@@ -138,16 +138,16 @@ func handleFailOrLeaveMsg(m utils.Message) {
 	curMon := <-responChan
 	// send fail message to others
 	for _, mem := range curMon.Members {
-		dstAddr := &net.UDPAddr{IP: net.ParseIP(mem.ip), Port: port}
+		dstAddr := &net.UDPAddr{IP: net.ParseIP(mem.IP), Port: port}
 		// build connection
 		conn, err := net.DialUDP("udp", nil, dstAddr)
 		if err != nil {
-			log.Fatal("Something wrong when build udp conn with ", mem.id)
+			log.Fatal("Something wrong when build udp conn with ", mem.ID)
 		}
 		// send message
 		_, err = conn.Write(failMsg)
 		if err != nil {
-			log.Fatal("Something wrong when send udp packet to", mem.id)
+			log.Fatal("Something wrong when send udp packet to", mem.ID)
 		}
 	}
 }
@@ -169,15 +169,15 @@ func startMonitor(stopChan <-chan struct{}) {
 					// dstAddr := &net.UDPAddr{IP: net.ParseIP(mon.ip), Port: port}
 					// // build connection
 					// fmt.Println(dstAddr)
-					conn, err := net.Dial("udp", mon.ip+":"+strconv.Itoa(port))
+					conn, err := net.Dial("udp", mon.IP+":"+strconv.Itoa(port))
 					if err != nil {
-						log.Fatal("Something wrong when build udp conn with ", mon.id)
+						log.Fatal("Something wrong when build udp conn with ", mon.ID)
 					}
 					// send message
 					_, err = conn.Write(msg)
-					// fmt.Println("Ping:", mon.id, pingMsg)
+					// fmt.Println("Ping:", mon.ID, pingMsg)
 					if err != nil {
-						log.Fatal("Something wrong when send udp packet to", mon.id)
+						log.Fatal("Something wrong when send udp packet to", mon.ID)
 					}
 					// set read deadline for timeout
 					conn.SetReadDeadline(time.Now().Add(time.Duration(2000) * time.Millisecond))
@@ -186,40 +186,40 @@ func startMonitor(stopChan <-chan struct{}) {
 					_, err = conn.Read(rcvMsg)
 					// _ = utils.Json2Msg(rcvMsg[:n])
 					if err != nil {
-						// fmt.Println("Dead!", mon.id)
+						// fmt.Println("Dead!", mon.ID)
 						// monitor object failed
 						ticker.Stop()
 						// delete the failed node
 						operaChan <- "MON"
-						failMsg := utils.Msg2Json(utils.CreateMsg(localIp, localID, utils.FAIL, mon.id))
+						failMsg := utils.Msg2Json(utils.CreateMsg(localIp, localID, utils.FAIL, mon.ID))
 						// get the monitor list
 						curMon := <-responChan
 						// send fail message to others
 						for _, m := range curMon.Members {
-							if strings.Compare(m.id, mon.id) == 0 {
+							if strings.Compare(m.ID, mon.ID) == 0 {
 								continue
 							}
-							dstAddr := &net.UDPAddr{IP: net.ParseIP(m.ip), Port: port}
+							dstAddr := &net.UDPAddr{IP: net.ParseIP(m.IP), Port: port}
 							// build connection
 							conn, err := net.DialUDP("udp", nil, dstAddr)
 							if err != nil {
-								log.Fatal("Something wrong when build udp conn with " + m.id)
+								log.Fatal("Something wrong when build udp conn with " + m.ID)
 							}
 							// send message
 							_, err = conn.Write(failMsg)
 							if err != nil {
-								log.Fatal("Something wrong when send udp packet to" + m.id)
+								log.Fatal("Something wrong when send udp packet to" + m.ID)
 							}
 						}
-						operaChan <- "DEL" + mon.id
+						operaChan <- "DEL" + mon.ID
 						operaChan <- "RESTART"
 					}
 					// monitor object is still alive
-					// fmt.Println("target is still alive", mon.id)
+					// fmt.Println("target is still alive", mon.ID)
 					// close the connection
 					conn.Close()
 				case <-stopChan:
-					// fmt.Println("Break ", mon.id)
+					// fmt.Println("Break ", mon.ID)
 					return
 				}
 			}
@@ -280,7 +280,7 @@ func commandServer() {
 			operaChan <- "READ"
 			curMem := <-listChan
 			for _, mem := range curMem.Members {
-				fmt.Println(mem.id)
+				fmt.Println(mem.ID)
 			}
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
@@ -296,7 +296,7 @@ func commandServer() {
 			operaChan <- "MON"
 			curMon := <-responChan
 			for _, mem := range curMon.Members {
-				fmt.Println(mem.id)
+				fmt.Println(mem.ID)
 			}
 		}
 	}
@@ -318,9 +318,9 @@ func main() {
 	// monList.Members = []Member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}
 	// monList.Members = []Member{{localIp, localID}}
 	go operationsBank()
-	// operaChan <- "ADD"
-	// localIP := utils.GetLocalIP()
-	// bufferChan <- Member{localIP, utils.GenerateID(localIP)}
+	operaChan <- "ADD"
+	localIP := utils.GetLocalIP()
+	bufferChan <- Member{localIP, utils.GenerateID(localIP)}
 	go startMonitor(stopChan)
 	go handler()
 	go commandServer()

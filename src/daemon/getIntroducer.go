@@ -42,7 +42,7 @@ func (l *Listener) HandleJoinRequest(msg []byte, ack *bool) error {
 	operaChan <- "READ"
 	curMem := <-listChan
 	for _, m0 := range curMem.Members {
-		if m0.ip == m.ip {
+		if m0.IP == m.IP {
 			log.Println("Received join request from Member who are already in the ring!")
 			return nil
 		}
@@ -61,6 +61,7 @@ func (l *Listener) HandleRetrieveInfo(msg string, buffer *[]byte) error {
 	} else {
 		*buffer = append(*buffer, jsonData...)
 	}
+	fmt.Println(*buffer)
 	return nil
 }
 

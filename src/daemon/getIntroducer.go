@@ -91,7 +91,7 @@ func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 				*buffer = append(*buffer, jsonData...)
 			}
 			fmt.Println(string(*buffer), "----------------------------------------")
-			if err := client.Call("Listener.UpdateMemList", "node", &buffer); err != nil {
+			if err := client.Call("Listener.UpdateMemList", "node", buffer); err != nil {
 				fmt.Println("Hello")
 				log.Fatal("Introducer: Error in updating membership lists: ", err)
 				return err
@@ -117,7 +117,7 @@ func (l *Listener) UpdateMonList(msg string, buffer *[]byte) error {
 			if err != nil {
 				log.Fatal(err)
 			}
-			if err := client.Call("Listener.UpdateMonList", "node", &buffer); err != nil {
+			if err := client.Call("Listener.UpdateMonList", "node", buffer); err != nil {
 				log.Fatal("Introducer: Error in updating monitor lists: ", err)
 				return err
 			}

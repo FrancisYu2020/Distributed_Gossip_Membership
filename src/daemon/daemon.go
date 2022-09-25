@@ -144,7 +144,7 @@ func startMonitor(stopChan <-chan struct{}) {
 	// fmt.Println("Try to start all monitors!")
 	for _, mon := range monList.Members {
 		go func(mon Member) {
-			// fmt.Println("Start Monitor", mon.id)
+			fmt.Println("Start Monitor", mon.ID)
 			var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
 			msg := utils.Msg2Json(pingMsg)
 			var rcvMsg = make([]byte, 1024)

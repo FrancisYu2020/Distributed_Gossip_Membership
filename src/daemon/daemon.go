@@ -49,16 +49,16 @@ func update() {
 	}
 	monList.Members = []Member{}
 	// if we do not have at least 4 other members
+	var newList []Member
 	if len(memList.Members) <= 2 {
-		monList.Members = append(monList.Members, memList.Members[:idx]...)
-		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+		newList = append(newList, memList.Members[:idx]...)
+		newList = append(newList, memList.Members[idx+1:]...)
 	} else { // mointor following 4 members
-		var newList []Member
 		for i := 1; i <= 2; i++ {
 			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
 		}
-		monList.Members = newList
 	}
+	monList.Members = newList
 }
 
 // delete failed or leaved node from local list

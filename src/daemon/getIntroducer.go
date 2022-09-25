@@ -114,11 +114,11 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
 	return nil
 }
 
-func (l *Listener) UpdateMonList(msg string, buffer *[]byte) error {
+func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the membership list accordingly
 	// TODO: finish this function
-	if msg == "introducer" {
+	if string(buffer) == "introducer" {
 		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {

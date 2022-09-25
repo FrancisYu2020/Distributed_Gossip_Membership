@@ -88,7 +88,7 @@ func UpdateRequest(client *rpc.Client) {
 	if err := client.Call("Listener.UpdateMemList", buffer, &reply); err != nil {
 		log.Fatal("Error in other members updating memList: ", err)
 	}
-	if err := client.Call("Listener.UpdateMonList", "introducer", &buffer); err != nil {
+	if err := client.Call("Listener.UpdateMonList", buffer, &reply); err != nil {
 		log.Fatal("Error in other members updating monList: ", err)
 	}
 }

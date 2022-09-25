@@ -12,13 +12,13 @@ import (
 	"time"
 )
 
-type member struct {
+type Member struct {
 	ip string
 	id string
 }
 
 type list struct {
-	members []member
+	Members []Member
 }
 
 /*******  Global Variable ******/
@@ -35,21 +35,22 @@ var operaChan = make(chan string, 1024)
 var stopChan = make(chan struct{})
 var responChan = make(chan list, 1024)
 var listChan = make(chan list, 1024)
+var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Members
 
 /*******************************/
 
 // delete failed or leaved node from local list
 func del(target string) {
 	// fmt.Println("------------------")
-	// fmt.Println("Cur members:", memList.members)
-	// fmt.Println("kill member:", target)
+	// fmt.Println("Cur Members:", memList.Members)
+	// fmt.Println("kill Member:", target)
 	// kill cur monitors
 	if strings.Compare(target, localID) == 0 {
 		// do not delete self
 		return
 	}
 	var idx int = -1
-	for i, m := range memList.members {
+	for i, m := range memList.Members {
 		if strings.Compare(m.id, target) == 0 {
 			idx = i
 			break
@@ -57,33 +58,33 @@ func del(target string) {
 	}
 	if idx == -1 {
 		// do not need to send message now
-		// fmt.Println("After members:", memList.members)
+		// fmt.Println("After Members:", memList.Members)
 		// fmt.Println("------------------")
 		return
 	}
-	memList.members = append(memList.members[:idx], memList.members[idx+1:]...)
+	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
 
 	idx = -1
-	for i, m := range memList.members {
+	for i, m := range memList.Members {
 		if strings.Compare(m.id, localID) == 0 {
 			idx = i
 			break
 		}
 	}
-	monList.members = []member{}
-	// if we do not have at least 3 other members
-	if len(memList.members) <= 3 {
-		monList.members = append(monList.members, memList.members[:idx]...)
-		monList.members = append(monList.members, memList.members[idx+1:]...)
+	monList.Members = []Member{}
+	// if we do not have at least 3 other Members
+	if len(memList.Members) <= 3 {
+		monList.Members = append(monList.Members, memList.Members[:idx]...)
+		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
 	} else {
-		var newList []member
+		var newList []Member
 		for i := 1; i <= 2; i++ {
-			newList = append(newList, memList.members[(idx+i)%len(memList.members)])
+			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
 		}
-		newList = append(newList, memList.members[(idx-1)%len(memList.members)])
-		monList.members = newList
+		newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
+		monList.Members = newList
 	}
-	// fmt.Println("After members:", memList.members)
+	// fmt.Println("After Members:", memList.Members)
 	// fmt.Println("------------------")
 	return
 }
@@ -91,7 +92,7 @@ func del(target string) {
 func checkExit(target string) bool {
 	operaChan <- "READ"
 	curMem := <-listChan
-	for _, m := range curMem.members {
+	for _, m := range curMem.Members {
 		if strings.Compare(m.id, target) == 0 {
 			return true
 		}
@@ -108,13 +109,14 @@ func operationsBank() {
 		if strings.Compare(operation[:3], "DEL") == 0 {
 			del(id)
 		} else if strings.Compare(operation[:3], "ADD") == 0 {
-			//
+			memList.Members = append(memList.Members, <-bufferChan)
+			// fmt.Println(memList.Members)
 		} else if strings.Compare(operation[:3], "MON") == 0 {
 			responChan <- monList
 		} else if strings.Compare(operation[:4], "READ") == 0 {
 			listChan <- memList
 			// } else if strings.Compare(operation[:4], "KILL") == 0 {
-			// 	for i := 0; i < len(monList.members)-1; i++ {
+			// 	for i := 0; i < len(monList.Members)-1; i++ {
 			// 		killChan <- "KILL"
 			// 	}
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
@@ -135,7 +137,7 @@ func handleFailOrLeaveMsg(m utils.Message) {
 	operaChan <- "MON"
 	curMon := <-responChan
 	// send fail message to others
-	for _, mem := range curMon.members {
+	for _, mem := range curMon.Members {
 		dstAddr := &net.UDPAddr{IP: net.ParseIP(mem.ip), Port: port}
 		// build connection
 		conn, err := net.DialUDP("udp", nil, dstAddr)
@@ -153,8 +155,8 @@ func handleFailOrLeaveMsg(m utils.Message) {
 // start to monitor
 func startMonitor(stopChan <-chan struct{}) {
 	// fmt.Println("Try to start all monitors!")
-	for _, mon := range monList.members {
-		go func(mon member) {
+	for _, mon := range monList.Members {
+		go func(mon Member) {
 			// fmt.Println("Start Monitor", mon.id)
 			var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
 			msg := utils.Msg2Json(pingMsg)
@@ -193,7 +195,7 @@ func startMonitor(stopChan <-chan struct{}) {
 						// get the monitor list
 						curMon := <-responChan
 						// send fail message to others
-						for _, m := range curMon.members {
+						for _, m := range curMon.Members {
 							if strings.Compare(m.id, mon.id) == 0 {
 								continue
 							}
@@ -277,13 +279,13 @@ func commandServer() {
 		if strings.Compare(command, "list_mem") == 0 {
 			operaChan <- "READ"
 			curMem := <-listChan
-			for _, mem := range curMem.members {
+			for _, mem := range curMem.Members {
 				fmt.Println(mem.id)
 			}
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
 		} else if strings.Compare(command, "join") == 0 {
-			if err := JoinRequest(portTCP); err != nil {
+			if err := NodeJoin(); err != nil {
 				log.Fatal("Error in joining new node: ", err)
 			}
 		} else if strings.Compare(command, "leave") == 0 {
@@ -293,7 +295,7 @@ func commandServer() {
 		} else if strings.Compare(command, "list_mon") == 0 {
 			operaChan <- "MON"
 			curMon := <-responChan
-			for _, mem := range curMon.members {
+			for _, mem := range curMon.Members {
 				fmt.Println(mem.id)
 			}
 		}
@@ -309,14 +311,16 @@ func main() {
 		fmt.Println("----------------I am a pariah node :(----------------")
 	}
 
-	fmt.Println(localID)
-	fmt.Println(localIp)
-	memList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2203.cs.illinois.edu", "test7"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}, {localIp, localID}}
-	// memList.members = []member{{localIp, localID}}
-	monList.members = []member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}
-	// monList.members = []member{{localIp, localID}}
-	fmt.Println(monList.members)
+	// fmt.Println(localID)
+	// fmt.Println(localIp)
+	// memList.Members = []Member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2203.cs.illinois.edu", "test7"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}, {localIp, localID}}
+	// memList.Members = []Member{{localIp, localID}}
+	// monList.Members = []Member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}
+	// monList.Members = []Member{{localIp, localID}}
 	go operationsBank()
+	// operaChan <- "ADD"
+	// localIP := utils.GetLocalIP()
+	// bufferChan <- Member{localIP, utils.GenerateID(localIP)}
 	go startMonitor(stopChan)
 	go handler()
 	go commandServer()

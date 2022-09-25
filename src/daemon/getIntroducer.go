@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -23,6 +24,10 @@ func IsIntroducer(indicator string) bool {
 	return false
 }
 
+func MemberIdentical(m1 Member, m2 Member) {
+	//
+}
+
 func (l *Listener) GetLine(line []byte, ack *bool) error {
 	fmt.Println(string(line))
 	return nil
@@ -31,18 +36,83 @@ func (l *Listener) GetLine(line []byte, ack *bool) error {
 func (l *Listener) HandleJoinRequest(msg []byte, ack *bool) error {
 	// a new node is joining the ring
 	buffer := strings.Split(string(msg), "\r\n\r\n")
-	ip := buffer[0]
-	id := buffer[1]
-	fmt.Println("Node", ip, "is joining...")
-	fmt.Println(ip, "----", id, len(ip), len(id))
-	fmt.Println(string(msg), "  join request received!")
-	// log.Println("Join request received!!!----------------------------")
+	m := Member{buffer[0], buffer[1]}
+
+	// prevent node to join if it is already in the ring
+	operaChan <- "READ"
+	curMem := <-listChan
+	for _, m0 := range curMem.Members {
+		if m0.ip == m.ip {
+			log.Println("Received join request from Member who are already in the ring!")
+			return nil
+		}
+	}
+	bufferChan <- m
+	operaChan <- "ADD"
+	return nil
+}
+
+func (l *Listener) HandleRetrieveInfo(msg string, buffer *[]byte) error {
+	// sending the Membership list and monitor list to the new node
+	operaChan <- "READ"
+	curMem := <-listChan
+	if jsonData, err := json.Marshal(curMem); err != nil {
+		return err
+	} else {
+		*buffer = append(*buffer, jsonData...)
+	}
 	return nil
 }
 
 func (l *Listener) HandleLeaveRequest() error {
 	// an existing node is leaving the ring
 	return nil
+}
+
+func Leave(target string) {
+	// kill cur monitors
+	// if strings.Compare(target, localID) == 0 {
+	// 	// do not delete self
+	// 	return
+	// }
+	// var idx int = -1
+	// for i, m := range memList.Members {
+	// 	if strings.Compare(m.id, target) == 0 {
+	// 		idx = i
+	// 		break
+	// 	}
+	// }
+	// if idx == -1 {
+	// 	// do not need to send message now
+	// 	// fmt.Println("After Members:", memList.Members)
+	// 	// fmt.Println("------------------")
+	// 	return
+	// }
+	// memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
+
+	// idx = -1
+	// for i, m := range memList.Members {
+	// 	if strings.Compare(m.id, localID) == 0 {
+	// 		idx = i
+	// 		break
+	// 	}
+	// }
+	// monList.Members = []Member{}
+	// // if we do not have at least 3 other Members
+	// if len(memList.Members) <= 3 {
+	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
+	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+	// } else {
+	// 	var newList []Member
+	// 	for i := 1; i <= 2; i++ {
+	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
+	// 	}
+	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
+	// 	monList.Members = newList
+	// }
+	// // fmt.Println("After Members:", memList.Members)
+	// // fmt.Println("------------------")
+	// return
 }
 
 func IntroducerWorker() {

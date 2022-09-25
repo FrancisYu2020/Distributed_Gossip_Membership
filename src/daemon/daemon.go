@@ -47,6 +47,9 @@ func update() {
 			break
 		}
 	}
+	if idx == -1 {
+		return
+	}
 	var newList []Member
 	// if we do not have at least 4 other members
 	if len(memList.Members) <= 5 {

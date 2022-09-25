@@ -124,7 +124,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 			if err != nil {
 				log.Fatal(err)
 			}
-			if err := client.Call("Listener.UpdateMonList", "node", buffer); err != nil {
+			if err := client.Call("Listener.UpdateMonList", []byte("node"), buffer); err != nil {
 				log.Fatal("Introducer: Error in updating monitor lists: ", err)
 				return err
 			}

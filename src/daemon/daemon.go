@@ -147,7 +147,7 @@ func startMonitor(stopChan <-chan struct{}) {
 	// fmt.Println("Try to start all monitors!")
 	for _, mon := range monList.Members {
 		go func(mon Member) {
-			fmt.Println("Start Monitor", mon.ID)
+			// fmt.Println("Start Monitor", mon.ID)
 			var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
 			msg := utils.Msg2Json(pingMsg)
 			var rcvMsg = make([]byte, 1024)
@@ -176,7 +176,7 @@ func startMonitor(stopChan <-chan struct{}) {
 					_, err = conn.Read(rcvMsg)
 					// _ = utils.Json2Msg(rcvMsg[:n])
 					if err != nil {
-						fmt.Println("Dead!", mon.ID)
+						// fmt.Println("Dead: ", mon.ID)
 						// monitor object failed
 						ticker.Stop()
 						// delete the failed node
@@ -250,9 +250,9 @@ func handler() {
 			}
 		// delete fail node from local when receive fail message
 		case utils.FAIL:
-			fmt.Println("Receive fail message:", msg.Payload)
+			// fmt.Println("Receive fail message:", msg.Payload)
 			if checkExit(msg.Payload) {
-				fmt.Println("Delete it!")
+				// fmt.Println("Delete it!")
 				go handleFailOrLeaveMsg(msg)
 			}
 		// delete leave node from local when receive leave message
@@ -277,7 +277,8 @@ func commandServer() {
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
 		} else if strings.Compare(command, "join") == 0 {
-			if err := NodeJoin(); err != nil {
+			if id, err := NodeJoin(); err != nil {
+				localID = id
 				log.Fatal("Error in joining new node: ", err)
 			}
 			operaChan <- "RESTART"

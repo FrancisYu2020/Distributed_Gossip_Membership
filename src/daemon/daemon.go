@@ -84,7 +84,7 @@ func del(target string) {
 		return
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
-
+	update()
 	// idx = -1
 	// for i, m := range memList.Members {
 	// 	if strings.Compare(m.ID, localID) == 0 {

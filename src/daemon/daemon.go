@@ -39,6 +39,27 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 
 /*******************************/
 
+func update() {
+	idx := -1
+	for i, m := range memList.members {
+		if strings.Compare(m.id, localID) == 0 {
+			idx = i
+			break
+		}
+	}
+	monList.members = []member{}
+	// if we do not have at least 4 other members
+	if len(memList.members) <= 4 {
+		monList.members = append(monList.members, memList.members[:idx]...)
+		monList.members = append(monList.members, memList.members[idx+1:]...)
+	} else { // mointor following 4 members
+		var newList []member
+		for i := 1; i <= 4; i++ {
+			newList = append(newList, memList.members[(idx+i)%len(memList.members)])
+		}
+	}
+}
+
 // delete failed or leaved node from local list
 func del(target string) {
 	// fmt.Println("------------------")

@@ -85,26 +85,27 @@ func del(target string) {
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
 
-	idx = -1
-	for i, m := range memList.Members {
-		if strings.Compare(m.ID, localID) == 0 {
-			idx = i
-			break
-		}
-	}
-	monList.Members = []Member{}
-	// if we do not have at least 3 other Members
-	if len(memList.Members) <= 3 {
-		monList.Members = append(monList.Members, memList.Members[:idx]...)
-		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
-	} else {
-		var newList []Member
-		for i := 1; i <= 2; i++ {
-			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
-		}
-		newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
-		monList.Members = newList
-	}
+	update()
+	// idx = -1
+	// for i, m := range memList.Members {
+	// 	if strings.Compare(m.ID, localID) == 0 {
+	// 		idx = i
+	// 		break
+	// 	}
+	// }
+	// monList.Members = []Member{}
+	// // if we do not have at least 3 other Members
+	// if len(memList.Members) <= 3 {
+	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
+	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+	// } else {
+	// 	var newList []Member
+	// 	for i := 1; i <= 2; i++ {
+	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
+	// 	}
+	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
+	// 	monList.Members = newList
+	// }
 	// fmt.Println("After Members:", memList.Members)
 	// fmt.Println("------------------")
 	return

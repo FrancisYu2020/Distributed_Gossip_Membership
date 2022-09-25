@@ -86,7 +86,6 @@ func del(target string) {
 		return
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
-	update()
 	// idx = -1
 	// for i, m := range memList.Members {
 	// 	if strings.Compare(m.ID, localID) == 0 {
@@ -145,6 +144,8 @@ func operationsBank() {
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
 			fmt.Println("OK, CLOSE ALL")
 			close(stopChan)
+			fmt.Println("Update mon list")
+			update()
 			time.Sleep(10 * time.Millisecond)
 			fmt.Println("OK NOW RESTART")
 			stopChan = make(chan struct{})

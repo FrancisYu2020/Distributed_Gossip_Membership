@@ -41,21 +41,21 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 
 func update() {
 	idx := -1
-	for i, m := range memList.members {
-		if strings.Compare(m.id, localID) == 0 {
+	for i, m := range memList.Members {
+		if strings.Compare(m.ID, localID) == 0 {
 			idx = i
 			break
 		}
 	}
-	monList.members = []member{}
+	monList.Members = []Member{}
 	// if we do not have at least 4 other members
-	if len(memList.members) <= 4 {
-		monList.members = append(monList.members, memList.members[:idx]...)
-		monList.members = append(monList.members, memList.members[idx+1:]...)
+	if len(memList.Members) <= 4 {
+		monList.Members = append(monList.Members, memList.Members[:idx]...)
+		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
 	} else { // mointor following 4 members
-		var newList []member
+		var newList []Member
 		for i := 1; i <= 4; i++ {
-			newList = append(newList, memList.members[(idx+i)%len(memList.members)])
+			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
 		}
 	}
 }
@@ -85,26 +85,26 @@ func del(target string) {
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
 
-	idx = -1
-	for i, m := range memList.Members {
-		if strings.Compare(m.ID, localID) == 0 {
-			idx = i
-			break
-		}
-	}
-	monList.Members = []Member{}
-	// if we do not have at least 3 other Members
-	if len(memList.Members) <= 3 {
-		monList.Members = append(monList.Members, memList.Members[:idx]...)
-		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
-	} else {
-		var newList []Member
-		for i := 1; i <= 2; i++ {
-			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
-		}
-		newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
-		monList.Members = newList
-	}
+	// idx = -1
+	// for i, m := range memList.Members {
+	// 	if strings.Compare(m.ID, localID) == 0 {
+	// 		idx = i
+	// 		break
+	// 	}
+	// }
+	// monList.Members = []Member{}
+	// // if we do not have at least 3 other Members
+	// if len(memList.Members) <= 3 {
+	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
+	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+	// } else {
+	// 	var newList []Member
+	// 	for i := 1; i <= 2; i++ {
+	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
+	// 	}
+	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
+	// 	monList.Members = newList
+	// }
 	// fmt.Println("After Members:", memList.Members)
 	// fmt.Println("------------------")
 	return
@@ -207,7 +207,7 @@ func startMonitor(stopChan <-chan struct{}) {
 					_, err = conn.Read(rcvMsg)
 					// _ = utils.Json2Msg(rcvMsg[:n])
 					if err != nil {
-						// fmt.Println("Dead!", mon.ID)
+						fmt.Println("Dead!", mon.ID)
 						// monitor object failed
 						ticker.Stop()
 						// delete the failed node

@@ -111,9 +111,9 @@ func NodeLeave() error {
 func LeaveRequest(client *rpc.Client) {
 	// current node sending request to the introducer to join the ring
 	ip := utils.GetLocalIP()
-	var reply bool
+	var reply []byte
 	if err := client.Call("Listener.HandleLeaveRequest", ip, &reply); err != nil {
-		log.Fatal("Error in join request: ", err)
+		log.Fatal("Error in leave request: ", err)
 	}
 }
 

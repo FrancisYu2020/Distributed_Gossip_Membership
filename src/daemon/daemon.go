@@ -344,10 +344,10 @@ func main() {
 	// monList.Members = []Member{{"fa22-cs425-2201.cs.illinois.edu", "test5"}, {"fa22-cs425-2202.cs.illinois.edu", "test6"}, {"fa22-cs425-2204.cs.illinois.edu", "test4"}}
 	// monList.Members = []Member{{localIp, localID}}
 	go operationsBank()
-	operaChan <- "ADD"
+	// operaChan <- "ADD"
 	// localIP := utils.GetLocalIP()
 	// bufferChan <- Member{localIP, utils.GenerateID(localIP)}
-	go startMonitor(stopChan)
+	// go startMonitor(stopChan)
 	go handler()
 	go commandServer()
 	for {

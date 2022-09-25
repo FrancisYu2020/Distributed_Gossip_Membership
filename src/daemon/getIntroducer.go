@@ -85,6 +85,7 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *string) error {
 	//TODO: finish this function
 	if *msg == "introducer" {
 		for _, m := range memList.Members[:Max(1, len(memList.Members)-1)] {
+			log.Println("Dial address is ", m.IP+":"+strconv.Itoa(portTCP))
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
 				log.Fatal(err)
@@ -97,7 +98,6 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *string) error {
 			} else {
 				buffer1 = append(buffer1, jsonData...)
 			}
-			fmt.Println(string(buffer1), "----------------------------------------")
 			reply := "node"
 			if err := client.Call("Listener.UpdateMemList", buffer1, &reply); err != nil {
 				fmt.Println("Hello")

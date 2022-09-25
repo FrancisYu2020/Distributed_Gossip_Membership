@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"src/utils"
 	"strconv"
 	"strings"
 )
@@ -43,7 +44,7 @@ func (l *Listener) HandleJoinRequest(msg []byte, ack *bool) error {
 	curMem := <-listChan
 	for _, m0 := range curMem.Members {
 		if m0.IP == m.IP {
-			log.Println("Received join request from Member who are already in the ring!")
+			log.Println("Warning: Received join request from Member who are already in the ring!")
 			return nil
 		}
 	}
@@ -61,16 +62,113 @@ func (l *Listener) HandleRetrieveInfo(msg string, buffer *[]byte) error {
 	} else {
 		*buffer = append(*buffer, jsonData...)
 	}
-	fmt.Println(*buffer)
+	// fmt.Println(*buffer)
+	return nil
+}
+
+func (l *Listener) JoinNotification(msg string, buffer *[]byte) error {
+	// The introducer getting the success message from the node and print the join message
+	log.Println(msg)
+	return nil
+}
+
+func Max(a int, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
+	// the introducer will be asked by the new node to let other nodes
+	// know the existence of the new node and update the monitor list accordingly
+	//TODO: finish this function
+	if string(buffer) == "introducer" {
+		for _, m := range memList.Members[:Max(1, len(memList.Members)-1)] {
+			// log.Println("Dial address is ", m.IP+":"+strconv.Itoa(portTCP))
+			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
+			if err != nil {
+				log.Fatal(err)
+			}
+			var buffer1 []byte
+			operaChan <- "READ"
+			curMem := <-listChan
+			if jsonData, err := json.Marshal(curMem); err != nil {
+				return err
+			} else {
+				buffer1 = append(buffer1, jsonData...)
+			}
+			var reply []byte
+			if err := client.Call("Listener.UpdateMemList", buffer1, &reply); err != nil {
+				log.Fatal("Introducer: Error in updating membership lists: ", err)
+				return err
+			}
+		}
+	} else {
+		// log.Println("Hello, I am currently in node ", utils.GetLocalIP())
+		if err := json.Unmarshal(buffer, &memList); err != nil {
+			log.Fatal("Node: Error in updating membership list: ", err)
+		}
+	}
+
+	return nil
+}
+
+func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
+	// the introducer will be asked by the new node to let other nodes
+	// know the existence of the new node and update the membership list accordingly
+	// TODO: finish this function
+	if string(buffer) == "introducer" {
+		if len(memList.Members) < 6 {
+			monList.Members = memList.Members[1:]
+		} else {
+			monList.Members = memList.Members[1:5]
+		}
+		for _, m := range memList.Members[1:] {
+			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
+			if err != nil {
+				log.Fatal(err)
+			}
+			var reply []byte
+			if err := client.Call("Listener.UpdateMonList", []byte("node"), &reply); err != nil {
+				log.Fatal("Introducer: Error in updating monitor lists: ", err)
+				return err
+			}
+		}
+	} else {
+		operaChan <- "READ"
+		curMem := <-listChan
+		idx := -1
+		for i, m := range curMem.Members {
+			if m.IP == utils.GetLocalIP() {
+				idx = i
+				break
+			}
+		}
+		if idx == -1 {
+			log.Fatal("In UpdateMonList: Something went wrong in the membership lists")
+		}
+		monList.Members = nil
+		if len(curMem.Members) < 6 {
+			monList.Members = append(monList.Members, curMem.Members[:idx]...)
+			monList.Members = append(monList.Members, curMem.Members[idx+1:]...)
+		} else {
+			for i := 1; i < 5; i++ {
+				monList.Members = append(monList.Members, curMem.Members[(idx+i)%len(curMem.Members)])
+			}
+		}
+	}
 	return nil
 }
 
 func (l *Listener) HandleLeaveRequest() error {
 	// an existing node is leaving the ring
+	// TODO: finish this function
 	return nil
 }
 
 func Leave(target string) {
+	// TODO: finish this function
 	// kill cur monitors
 	// if strings.Compare(target, localID) == 0 {
 	// 	// do not delete self
@@ -136,5 +234,10 @@ func IntroducerWorker() {
 func StartIntroducer() {
 	// in main function, if the introducer indicator file is not found, this function will be skipped
 	// which means it is a common node, otherwise it will start a goroutine for tcp listener.
+	go IntroducerWorker()
+}
+
+func StartTCPServer() {
+	// function for starting TCP server, although same as IntroducerWorker
 	go IntroducerWorker()
 }

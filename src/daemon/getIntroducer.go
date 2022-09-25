@@ -79,7 +79,7 @@ func Max(a int, b int) int {
 	return b
 }
 
-func Teaser(msg string, buffer *[]byte) error {
+func (l *Listener) Teaser(msg string, buffer *[]byte) error {
 	fmt.Println("Teaser passed-----------------")
 	return nil
 }

@@ -161,58 +161,92 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 	return nil
 }
 
-func (l *Listener) HandleLeaveRequest() error {
-	// an existing node is leaving the ring
-	// TODO: finish this function
+//// functions for handling leave request
+////
+func (l *Listener) HandleLeaveRequest(msg []byte, ack *bool) error {
+	// a new node is joining the ring
+	buffer := strings.Split(string(msg), "\r\n\r\n")
+	// m := Member{buffer[0], buffer[1]}
+
+	del(buffer[0])
+	log.Println(memList)
+	log.Println(<-listChan)
 	return nil
 }
 
-func Leave(target string) {
-	// TODO: finish this function
-	// kill cur monitors
-	// if strings.Compare(target, localID) == 0 {
-	// 	// do not delete self
-	// 	return
-	// }
-	// var idx int = -1
-	// for i, m := range memList.Members {
-	// 	if strings.Compare(m.id, target) == 0 {
-	// 		idx = i
-	// 		break
-	// 	}
-	// }
-	// if idx == -1 {
-	// 	// do not need to send message now
-	// 	// fmt.Println("After Members:", memList.Members)
-	// 	// fmt.Println("------------------")
-	// 	return
-	// }
-	// memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
-
-	// idx = -1
-	// for i, m := range memList.Members {
-	// 	if strings.Compare(m.id, localID) == 0 {
-	// 		idx = i
-	// 		break
-	// 	}
-	// }
-	// monList.Members = []Member{}
-	// // if we do not have at least 3 other Members
-	// if len(memList.Members) <= 3 {
-	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
-	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
-	// } else {
-	// 	var newList []Member
-	// 	for i := 1; i <= 2; i++ {
-	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
-	// 	}
-	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
-	// 	monList.Members = newList
-	// }
-	// // fmt.Println("After Members:", memList.Members)
-	// // fmt.Println("------------------")
-	// return
+func (l *Listener) LeftNotification(msg string, buffer *[]byte) error {
+	// The introducer getting the success message from the node and print the join message
+	log.Println(msg)
+	return nil
 }
+
+// func update() {
+// 	idx := -1
+// 	for i, m := range memList.Members {
+// 		if strings.Compare(m.ID, localID) == 0 {
+// 			idx = i
+// 			break
+// 		}
+// 	}
+// 	monList.Members = []Member{}
+// 	// if we do not have at least 4 other members
+// 	if len(memList.Members) <= 4 {
+// 		monList.Members = append(monList.Members, memList.Members[:idx]...)
+// 		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+// 	} else { // mointor following 4 members
+// 		var newList []Member
+// 		for i := 1; i <= 4; i++ {
+// 			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
+// 		}
+// 	}
+// }
+
+// func Leave(target string) {
+// 	// TODO: finish this function
+// 	// kill cur monitors
+// 	// if strings.Compare(target, localID) == 0 {
+// 	// 	// do not delete self
+// 	// 	return
+// 	// }
+// 	// var idx int = -1
+// 	// for i, m := range memList.Members {
+// 	// 	if strings.Compare(m.id, target) == 0 {
+// 	// 		idx = i
+// 	// 		break
+// 	// 	}
+// 	// }
+// 	// if idx == -1 {
+// 	// 	// do not need to send message now
+// 	// 	// fmt.Println("After Members:", memList.Members)
+// 	// 	// fmt.Println("------------------")
+// 	// 	return
+// 	// }
+// 	// memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
+
+// 	// idx = -1
+// 	// for i, m := range memList.Members {
+// 	// 	if strings.Compare(m.id, localID) == 0 {
+// 	// 		idx = i
+// 	// 		break
+// 	// 	}
+// 	// }
+// 	// monList.Members = []Member{}
+// 	// // if we do not have at least 3 other Members
+// 	// if len(memList.Members) <= 3 {
+// 	// 	monList.Members = append(monList.Members, memList.Members[:idx]...)
+// 	// 	monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+// 	// } else {
+// 	// 	var newList []Member
+// 	// 	for i := 1; i <= 2; i++ {
+// 	// 		newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
+// 	// 	}
+// 	// 	newList = append(newList, memList.Members[(idx-1)%len(memList.Members)])
+// 	// 	monList.Members = newList
+// 	// }
+// 	// // fmt.Println("After Members:", memList.Members)
+// 	// // fmt.Println("------------------")
+// 	// return
+// }
 
 func IntroducerWorker() {
 	// the introducer start the tcp and listen locally

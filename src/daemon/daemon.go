@@ -275,7 +275,7 @@ func commandServer() {
 				log.Fatal("Error in joining new node: ", err)
 			}
 		} else if strings.Compare(command, "leave") == 0 {
-			if err := LeaveRequest(); err != nil {
+			if err := NodeLeave(); err != nil {
 				log.Fatal("Error in joining new node: ", err)
 			}
 		} else if strings.Compare(command, "list_mon") == 0 {

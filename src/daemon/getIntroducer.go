@@ -84,7 +84,7 @@ func (l *Listener) Teaser(msg string, buffer *[]byte) error {
 	return nil
 }
 
-func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
+func (l *Listener) UpdateMemList(buffer *[]byte, msg string) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the monitor list accordingly
 	//TODO: finish this function
@@ -103,12 +103,12 @@ func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 				buffer1 = append(buffer1, jsonData...)
 			}
 			fmt.Println(string(buffer1), "----------------------------------------")
-			if err := client.Call("Listener.Teaser", "node", &buffer1); err != nil {
-				fmt.Println("Hello")
+			if err := client.Call("Listener.Teaser", "node", buffer); err != nil {
+				fmt.Println("Hello 10086")
 				log.Fatal("Introducer: Error in Teaser: ", err)
 				return err
 			}
-			if err := client.Call("Listener.UpdateMemList", "node", &buffer1); err != nil {
+			if err := client.Call("Listener.UpdateMemList", &buffer1, "node"); err != nil {
 				fmt.Println("Hello")
 				log.Fatal("Introducer: Error in updating membership lists: ", err)
 				return err

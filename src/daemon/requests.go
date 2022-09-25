@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/rpc"
 	"src/utils"
@@ -71,7 +70,6 @@ func RetrieveInfo(client *rpc.Client) {
 		// to ensure the consistency
 		monList.Members = memList.Members[:4]
 	}
-	fmt.Println(memList.Members, monList.Members)
 }
 
 func UpdateRequest(client *rpc.Client) {

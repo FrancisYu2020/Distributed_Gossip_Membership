@@ -62,7 +62,7 @@ func (l *Listener) HandleRetrieveInfo(msg string, buffer *[]byte) error {
 	} else {
 		*buffer = append(*buffer, jsonData...)
 	}
-	fmt.Println(*buffer)
+	// fmt.Println(*buffer)
 	return nil
 }
 

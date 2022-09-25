@@ -62,9 +62,6 @@ func update() {
 
 // delete failed or leaved node from local list
 func del(target string) {
-	// fmt.Println("------------------")
-	// fmt.Println("Cur Members:", memList.Members)
-	// fmt.Println("kill Member:", target)
 	// kill cur monitors
 	if strings.Compare(target, localID) == 0 {
 		// do not delete self
@@ -79,8 +76,6 @@ func del(target string) {
 	}
 	if idx == -1 {
 		// do not need to send message now
-		// fmt.Println("After Members:", memList.Members)
-		// fmt.Println("------------------")
 		return
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
@@ -103,22 +98,18 @@ func checkExit(target string) bool {
 func operationsBank() {
 	for {
 		operation := <-operaChan
-		// fmt.Println(operation)
 		id := operation[3:]
 		if strings.Compare(operation[:3], "DEL") == 0 {
 			del(id)
 		} else if strings.Compare(operation[:3], "ADD") == 0 {
 			memList.Members = append(memList.Members, <-bufferChan)
-			// fmt.Println(memList.Members)
 		} else if strings.Compare(operation[:3], "MON") == 0 {
 			responChan <- monList
 		} else if strings.Compare(operation[:4], "READ") == 0 {
 			listChan <- memList
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
-			// fmt.Println("OK, CLOSE ALL")
 			close(stopChan)
 			time.Sleep(10 * time.Millisecond)
-			// fmt.Println("OK NOW RESTART")
 			stopChan = make(chan struct{})
 			startMonitor(stopChan)
 		}

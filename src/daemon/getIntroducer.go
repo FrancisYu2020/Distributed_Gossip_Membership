@@ -122,7 +122,7 @@ func (l *Listener) UpdateMonList(buffer []byte, msg *[]byte) error {
 		if len(memList.Members) < 6 {
 			monList.Members = memList.Members[1:]
 		} else {
-			monList.Members = memList.Members[1:6]
+			monList.Members = memList.Members[1:5]
 		}
 		for _, m := range memList.Members[1:] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))

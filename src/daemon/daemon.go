@@ -57,6 +57,7 @@ func update() {
 		for i := 1; i <= 2; i++ {
 			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
 		}
+		monList.Members = newList
 	}
 }
 

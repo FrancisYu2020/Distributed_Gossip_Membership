@@ -84,7 +84,7 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *string) error {
 	// know the existence of the new node and update the monitor list accordingly
 	//TODO: finish this function
 	if *msg == "introducer" {
-		for _, m := range memList.Members[1:Max(1, len(memList.Members)-1)] {
+		for _, m := range memList.Members[:Max(1, len(memList.Members)-1)] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
 				log.Fatal(err)

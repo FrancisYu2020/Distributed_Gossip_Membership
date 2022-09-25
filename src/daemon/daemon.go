@@ -42,22 +42,25 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 func update() {
 	idx := -1
 	for i, m := range memList.Members {
-		if strings.Compare(m.ID, localID) == 0 {
+		if strings.Compare(m.IP, localIp) == 0 {
 			idx = i
 			break
 		}
 	}
-	monList.Members = []Member{}
+	if idx == -1 {
+		return
+	}
+	var newList []Member
 	// if we do not have at least 4 other members
-	if len(memList.Members) <= 4 {
-		monList.Members = append(monList.Members, memList.Members[:idx]...)
-		monList.Members = append(monList.Members, memList.Members[idx+1:]...)
+	if len(memList.Members) <= 5 {
+		newList = append(newList, memList.Members[:idx]...)
+		newList = append(newList, memList.Members[idx+1:]...)
 	} else { // mointor following 4 members
-		var newList []Member
 		for i := 1; i <= 4; i++ {
 			newList = append(newList, memList.Members[(idx+i)%len(memList.Members)])
 		}
 	}
+	monList.Members = newList
 }
 
 // delete failed or leaved node from local list
@@ -80,7 +83,6 @@ func del(target string) {
 	}
 	memList.Members = append(memList.Members[:idx], memList.Members[idx+1:]...)
 	// log.Println(memList.Members)
-	update()
 	return
 }
 
@@ -110,6 +112,7 @@ func operationsBank() {
 			listChan <- memList
 		} else if strings.Compare(operation[:7], "RESTART") == 0 {
 			close(stopChan)
+			update()
 			time.Sleep(10 * time.Millisecond)
 			stopChan = make(chan struct{})
 			startMonitor(stopChan)
@@ -144,7 +147,7 @@ func startMonitor(stopChan <-chan struct{}) {
 	// fmt.Println("Try to start all monitors!")
 	for _, mon := range monList.Members {
 		go func(mon Member) {
-			// fmt.Println("Start Monitor", mon.id)
+			// fmt.Println("Start Monitor", mon.ID)
 			var pingMsg utils.Message = utils.CreateMsg(localIp, localID, utils.PING, "")
 			msg := utils.Msg2Json(pingMsg)
 			var rcvMsg = make([]byte, 1024)
@@ -173,7 +176,7 @@ func startMonitor(stopChan <-chan struct{}) {
 					_, err = conn.Read(rcvMsg)
 					// _ = utils.Json2Msg(rcvMsg[:n])
 					if err != nil {
-						// fmt.Println("Dead!", mon.ID)
+						// fmt.Println("Dead: ", mon.ID)
 						// monitor object failed
 						ticker.Stop()
 						// delete the failed node
@@ -247,7 +250,9 @@ func handler() {
 			}
 		// delete fail node from local when receive fail message
 		case utils.FAIL:
+			// fmt.Println("Receive fail message:", msg.Payload)
 			if checkExit(msg.Payload) {
+				// fmt.Println("Delete it!")
 				go handleFailOrLeaveMsg(msg)
 			}
 		// delete leave node from local when receive leave message
@@ -272,9 +277,11 @@ func commandServer() {
 		} else if strings.Compare(command, "list_self") == 0 {
 			fmt.Println(localID)
 		} else if strings.Compare(command, "join") == 0 {
-			if err := NodeJoin(); err != nil {
+			if id, err := NodeJoin(); err != nil {
+				localID = id
 				log.Fatal("Error in joining new node: ", err)
 			}
+			operaChan <- "RESTART"
 		} else if strings.Compare(command, "leave") == 0 {
 			if err := NodeLeave(); err != nil {
 				log.Fatal("Error in joining new node: ", err)

@@ -7,12 +7,12 @@ import (
 	"src/utils"
 )
 
-func NodeJoin() error {
+func NodeJoin() (string, error) {
 	client, err := rpc.Dial("tcp", "fa22-cs425-2210.cs.illinois.edu:9981")
 	if err != nil {
 		log.Fatal(err)
 	}
-	JoinRequest(client)
+	id := JoinRequest(client)
 	RetrieveInfo(client)
 	// next we show join success message on both introducer and current node
 	msg := utils.GetLocalIP() + " successfully joined the ring!"
@@ -26,10 +26,10 @@ func NodeJoin() error {
 
 	// ask the introducer to let other nodes update the membership and monitor lists
 	UpdateRequest(client)
-	return nil
+	return id, nil
 }
 
-func JoinRequest(client *rpc.Client) {
+func JoinRequest(client *rpc.Client) string {
 	// current node sending request to the introducer to join the ring
 	ip := utils.GetLocalIP()
 	id := utils.GenerateID(ip)
@@ -38,6 +38,7 @@ func JoinRequest(client *rpc.Client) {
 	if err := client.Call("Listener.HandleJoinRequest", []byte(msg), &reply); err != nil {
 		log.Fatal("Error in join request: ", err)
 	}
+	return id
 }
 
 func RetrieveInfo(client *rpc.Client) {

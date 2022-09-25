@@ -109,7 +109,7 @@ func (l *Listener) UpdateMemList(buffer []byte, msg *[]byte) error {
 			log.Fatal("Node: Error in updating membership list: ", err)
 		}
 	}
-
+	operaChan <- "RESTART"
 	return nil
 }
 

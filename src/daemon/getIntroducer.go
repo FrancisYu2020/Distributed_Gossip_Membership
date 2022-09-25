@@ -72,12 +72,19 @@ func (l *Listener) JoinNotification(msg string, buffer *[]byte) error {
 	return nil
 }
 
+func Max(a int, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func (l *Listener) UpdateMemList(msg string, buffer *[]byte) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the monitor list accordingly
 	//TODO: finish this function
 	if msg == "introducer" {
-		for _, m := range memList.Members[1 : len(memList.Members)-1] {
+		for _, m := range memList.Members[1:Max(1, len(memList.Members)-1)] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
 				log.Fatal(err)

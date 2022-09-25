@@ -29,7 +29,7 @@ or
 touch /home/[NETID]/introducer
 ```
 
-Under src/daemon, starter the introducer by:
+Please modify the introducer host to your actual introducer host in src/daemon/request.go, function Nodejoin() before you run the who program. Then under src/daemon, starter the introducer by:
 
 ```
 go run .

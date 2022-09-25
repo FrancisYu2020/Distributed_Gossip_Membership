@@ -79,16 +79,11 @@ func Max(a int, b int) int {
 	return b
 }
 
-func (l *Listener) Teaser(msg string, buffer *[]byte) error {
-	fmt.Println("Teaser passed-----------------")
-	return nil
-}
-
-func (l *Listener) UpdateMemList(buffer *[]byte, msg string) error {
+func (l *Listener) UpdateMemList(buffer []byte, msg *string) error {
 	// the introducer will be asked by the new node to let other nodes
 	// know the existence of the new node and update the monitor list accordingly
 	//TODO: finish this function
-	if msg == "introducer" {
+	if *msg == "introducer" {
 		for _, m := range memList.Members[1:Max(1, len(memList.Members)-1)] {
 			client, err := rpc.Dial("tcp", m.IP+":"+strconv.Itoa(portTCP))
 			if err != nil {
@@ -103,12 +98,8 @@ func (l *Listener) UpdateMemList(buffer *[]byte, msg string) error {
 				buffer1 = append(buffer1, jsonData...)
 			}
 			fmt.Println(string(buffer1), "----------------------------------------")
-			if err := client.Call("Listener.Teaser", "node", buffer); err != nil {
-				fmt.Println("Hello 10086")
-				log.Fatal("Introducer: Error in Teaser: ", err)
-				return err
-			}
-			if err := client.Call("Listener.UpdateMemList", &buffer1, "node"); err != nil {
+			reply := "node"
+			if err := client.Call("Listener.UpdateMemList", buffer1, &reply); err != nil {
 				fmt.Println("Hello")
 				log.Fatal("Introducer: Error in updating membership lists: ", err)
 				return err
@@ -116,7 +107,7 @@ func (l *Listener) UpdateMemList(buffer *[]byte, msg string) error {
 		}
 	} else {
 		log.Println("Hello, I am currently in node ", utils.GetLocalIP())
-		if err := json.Unmarshal(*buffer, &memList); err != nil {
+		if err := json.Unmarshal(buffer, &memList); err != nil {
 			log.Fatal("Node: Error in updating membership list: ", err)
 		}
 	}

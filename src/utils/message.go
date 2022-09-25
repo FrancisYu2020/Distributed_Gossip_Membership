@@ -9,6 +9,7 @@ const (
 	ACK
 	FAIL
 	LEAVE
+	JOIN
 )
 
 type Message struct {

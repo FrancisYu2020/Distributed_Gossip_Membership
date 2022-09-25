@@ -309,6 +309,7 @@ func commandServer() {
 			if err := NodeJoin(); err != nil {
 				log.Fatal("Error in joining new node: ", err)
 			}
+			operaChan <- "RESTART"
 		} else if strings.Compare(command, "leave") == 0 {
 			if err := LeaveRequest(); err != nil {
 				log.Fatal("Error in joining new node: ", err)

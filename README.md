@@ -1,7 +1,9 @@
 # MP2-hangy6-tian23 Distributed Group Membership
 
 ## Description
-A Go distributed group membership with a ring topology. The failure detection is achieved by monitoring 4 successors in the ring and check the ack from the successors pinged. We choose 4 successors to monitor since three simultaneous daemon fail can happen and we want to ensure the completeness of the failure detection. Introducer will introduce a joining node to all other members in the ring system. This project is implemented by hangy6(Hang Yu) and tian23(Tian Luan).
+A Go distributed group membership with a ring topology. The failure detection is achieved by monitoring 4 successors in the ring and check the ack from the successors pinged. We choose 4 successors to monitor since three simultaneous daemon fail can happen and we want to ensure the completeness of the failure detection. Introducer will introduce a joining node to all other members in the ring system.
+
+The branch main is for the demo and branch test_fp1, test_fp2 are branches for experimenting with the false positive rate. This project is implemented by hangy6(Hang Yu) and tian23(Tian Luan).
 
 
 ## Installation

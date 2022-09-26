@@ -39,7 +39,7 @@ var bufferChan = make(chan Member, 1024) // buffer for goroutines to transfer Me
 
 /*******************************/
 
-var packetLoss = float32(0.03)
+var packetLoss = float32(-1)
 
 func isLoss() bool {
 	r := rand.Float32()

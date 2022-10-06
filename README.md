@@ -1,4 +1,4 @@
-# MP2-hangy6-tian23 Distributed Group Membership
+# Distributed Group Membership
 
 ## Description
 A Go distributed group membership with a ring topology. The failure detection is achieved by monitoring 4 successors in the ring and check the ack from the successors pinged. We choose 4 successors to monitor since three simultaneous daemon fail can happen and we want to ensure the completeness of the failure detection. Introducer will introduce a joining node to all other members in the ring system.
@@ -78,8 +78,8 @@ list_self
 ```
 
 ## Support
-If you have any questions, please contact tian23@illinois.edu or hangy6@illinois.edu
+If you have any questions, please contact hangy6@illinois.edu
 
 ## Authors 
-Tian Luan & Hang Yu
+Hang Yu & Tian Luan
 
